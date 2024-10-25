@@ -41,18 +41,7 @@ begin
 end
 go
 
-if not exists (select * from information_schema.tables where
-	table_schema = 'importar' and table_name = 'Direccion')
-begin
-	create table importar.Direccion
-	(
-		dir varchar(200)
-	)
-	insert into importar.Direccion values ('D:\OneDrive\Documents\SQL Server Management Studio\BDA\TP\TP_integrador_Archivos')
-end
-go
-
-create or alter proc importar.importarVentas
+create or alter proc importar.importarVentas @dir varchar(200)
 as
 begin
 	create table #temporal
@@ -71,10 +60,6 @@ begin
 		empleado int,
 		idPago char(23)
 	)
-
-	declare @dir varchar(200)
-	select @dir = dir + '\Ventas_registradas.csv'
-	from importar.Direccion
 
 	declare @sql nvarchar(MAX)
 	set @sql = 'BULK INSERT #temporal
@@ -119,13 +104,9 @@ begin
 end
 go
 
-create or alter proc importar.importarSucursal
+create or alter proc importar.importarSucursal @dir varchar(200)
 as
 begin
-	declare @dir varchar(200)
-	select @dir = dir + '\Informacion_complementaria.xlsx'
-	from importar.Direccion
-
 	declare @sql nvarchar(MAX)
 	set @sql = 'insert into catalogo.Sucursal
 				select *
@@ -135,12 +116,9 @@ begin
 end
 go
 
-create or alter proc importar.importarEmpleados
+create or alter proc importar.importarEmpleados @dir varchar(200)
 as
 begin
-	declare @dir varchar(200)
-	select @dir = dir + '\Informacion_complementaria.xlsx'
-	from importar.Direccion
 	create table #temporal (legajo int,
 		nombre varchar(50),
 		apellido varchar(50),
@@ -158,20 +136,15 @@ begin
 				select *
 				from openrowset(''Microsoft.ACE.OLEDB.12.0'',
 				''Excel 12.0; Database=' + @dir + ''', [Empleados$])'
-
 	exec sp_executesql @sql
 	insert into recursosHumanos.Empleado select * from #temporal where legajo is not null
 	drop table #temporal
 end
 go
 
-create or alter proc importar.importarMediosDePago
+create or alter proc importar.importarMediosDePago @dir varchar(200)
 as
 begin
-	declare @dir varchar(200)
-	select @dir = dir + '\Informacion_complementaria.xlsx'
-	from importar.Direccion
-
 	create table #temporal (col1 char(11), nomIng char(11), nomEsp char(22))
 
 	declare @sql nvarchar(MAX)
@@ -179,37 +152,27 @@ begin
 				select *
 				from openrowset(''Microsoft.ACE.OLEDB.12.0'',
 				''Excel 12.0; Database=' + @dir + ''', [''medios de pago$''])'
-	
 	exec sp_executesql @sql
 	insert into ventas.MedioDePago select nomIng, nomEsp from #temporal
 	drop table #temporal
 end
 go
 
-create or alter proc importar.ImportarClasificacion
+create or alter proc importar.ImportarClasificacion @dir varchar(200)
 as
 begin
-	declare @dir varchar(200)
-	select @dir = dir + '\Informacion_complementaria.xlsx'
-	from importar.Direccion
-
 	declare @sql nvarchar(MAX)
 	set @sql = 'insert into catalogo.LineaProducto
 				select *
 				from openrowset(''Microsoft.ACE.OLEDB.12.0'',
 				''Excel 12.0; Database=' + @dir + ''', [''Clasificacion Productos$''])'
-	
 	exec sp_executesql @sql
 end
 go
 
-create or alter proc importar.ImportarProductos
+create or alter proc importar.importarCatalogo @dir varchar(200)
 as
 begin
-	declare @dir varchar(200)
-	select @dir = dir + '\Productos\catalogo.csv'
-	from importar.Direccion
-
 	declare @sql nvarchar(MAX)
 	set @sql = 'BULK INSERT catalogo.Nacional
              FROM ''' + @dir + '''
@@ -221,17 +184,25 @@ begin
 				 CODEPAGE = ''65001''
              );'
 	exec sp_executesql @sql
-	
-	select @dir = dir + '\Productos\Electronic accessories.xlsx'
-	from importar.Direccion
+end
+go
+
+create or alter proc importar.importarAccesoriosElectronicos @dir varchar(200)
+as
+begin
+	declare @sql nvarchar(MAX)
 	set @sql = 'INSERT INTO catalogo.Electronico
             SELECT *
             FROM OPENROWSET(''Microsoft.ACE.OLEDB.12.0'',
             ''Excel 12.0; Database=' + @dir + ''', [Sheet1$])'
 	exec sp_executesql @sql
+end
+go
 
-	select @dir = dir + '\Productos\Productos_importados.xlsx'
-	from importar.Direccion
+create or alter proc importar.importarProductosImportados @dir varchar(200)
+as
+begin
+	declare @sql nvarchar(MAX)
 	set @sql = 'INSERT INTO catalogo.Importado
             SELECT *
             FROM OPENROWSET(''Microsoft.ACE.OLEDB.12.0'',
@@ -240,29 +211,33 @@ begin
 end
 
 /*
-exec importar.importarVentas
+exec importar.importarVentas 'C:\TP_integrador_Archivos\Ventas_registradas.csv'
 exec importar.reemplazarCaracteres
-select *
-from ventas.Factura
+select * from ventas.Factura
 
 exec importar.configurarImportacionArchivosExcel
 
-exec importar.importarSucursal
+exec importar.importarSucursal 'C:\TP_integrador_Archivos\Informacion_complementaria.xlsx'
 select * from catalogo.Sucursal
 
-exec importar.importarEmpleados
+exec importar.importarEmpleados 'C:\TP_integrador_Archivos\Informacion_complementaria.xlsx'
 select * from recursosHumanos.Empleado
 
-exec importar.importarMediosDePago
+exec importar.importarMediosDePago 'C:\TP_integrador_Archivos\Informacion_complementaria.xlsx'
 select * from ventas.MedioDePago
 
-exec importar.ImportarClasificacion
+exec importar.importarClasificacion 'C:\TP_integrador_Archivos\Informacion_complementaria.xlsx'
 select * from catalogo.LineaProducto
 
-exec importar.ImportarProductos
+exec importar.importarCatalogo 'C:\TP_integrador_Archivos\Productos\catalogo.csv'
 select * from catalogo.Nacional
-select * from catalogo.Importado
+
+exec importar.importarAccesoriosElectronicos 'C:\TP_integrador_Archivos\Productos\Electronic accessories.xlsx'
 select * from catalogo.Electronico
+
+exec importar.importarProductosImportados 'C:\TP_integrador_Archivos\Productos\Productos_importados.xlsx'
+select * from catalogo.Importado
+
 */
 
 /*
