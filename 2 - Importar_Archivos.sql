@@ -228,24 +228,35 @@ begin
 	end catch
 
 	update #catalogoTemp
-	set nombre = replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(nombre, '?', 'ñ'), 'Ã³', 'ó'), 'Ã©', 'é'), 'Ã¡', 'á'), 'Ãº', 'ú'), 'Ã­', 'í'), 'ÃƒÂº', 'ú'), 'Ã‘', 'Ñ'), 'Âº' , 'º'), 'å˜', 'ñ') , 'Ã', 'Á')
+	set nombre = replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(nombre, '?', 'ñ'), 'Ã³', 'ó'), 'Ã©', 'é'), 'Ã¡', 'á'), 'Ãº', 'ú'), 'Ã­', 'í'), 'ÃƒÂº', 'ú'), 'Ã‘', 'Ñ'), 'Âº' , 'º'), 'å˜', 'ñ') , 'Ã', 'Á');
+	/*
+	with catalogoTempDuplicados as
+	(
+		select id, nombre, precio, precioRef, unidadRef, fecha, row_number() over(partition by nombre, precio order by id) as duplicados
+		from #catalogoTemp 
+	)
+	insert into catalogo.Producto(idProd, nombre, precio, precioRef, unidadRef, fecha)
+	select id, nombre, precio, precioRef, unidadRef, fecha
+	from catalogoTempDuplicados t
+	where not exists (select 1 from catalogo.Producto p where p.nombre = t.nombre and p.precio = t.precio) and duplicados = 1
+	*/
 
-	insert into catalogo.Catalogo(idProd, nombre, precio, precioRef, unidadRef, fecha)
+	insert into catalogo.Producto(idProd, nombre, precio, precioRef, unidadRef, fecha)
 	select id, nombre, precio, precioRef, unidadRef, fecha
 	from #catalogoTemp t
-	where not exists (select 1 from catalogo.Catalogo c where c.nombre = t.nombre and c.precio = t.precio);
+	where not exists (select 1 from catalogo.Producto p where p.nombre = t.nombre and p.precio = t.precio);
 
 	with catalogoDuplicados as
 	(
 		select nombre, precio, row_number() over(partition by nombre, precio order by nombre, precio) as duplicados
-		from catalogo.Catalogo
+		from catalogo.Producto
 	)
 	delete from catalogoDuplicados where duplicados > 1;
-
+	
 	insert into catalogo.PerteneceA(idCategoria, idProd)
-	select c.id, ca.id
-	from #catalogoTemp t join catalogo.Categoria c on c.categoria = t.categoria join catalogo.Catalogo ca on ca.nombre = t.nombre and ca.precio = t.precio
-	where not exists (select 1 from catalogo.PerteneceA p where p.idCategoria = c.id and p.idProd = ca.id )
+	select c.id, pr.id
+	from #catalogoTemp t join catalogo.Categoria c on c.categoria = t.categoria join catalogo.Producto pr on pr.nombre = t.nombre and pr.precio = t.precio
+	where not exists (select 1 from catalogo.PerteneceA p where p.idCategoria = c.id and p.idProd = pr.id )
 
 	drop table #catalogoTemp
 end
@@ -280,22 +291,22 @@ begin
 		insert into catalogo.Categoria(categoria, idLineaProd) select 'electronica', id from catalogo.LineaProducto where lineaProd like 'Tecnologia'
 	end
 
-	insert into catalogo.Catalogo(idProd, nombre, precioUSD)
+	insert into catalogo.Producto(idProd, nombre, precioUSD)
 	select id, nombre, precio
 	from #electronicTemp t
-	where not exists (select 1 from catalogo.Catalogo c where c.precioUSD = t.precio and c.nombre = t.nombre);
+	where not exists (select 1 from catalogo.Producto p where p.precioUSD = t.precio and p.nombre = t.nombre);
 
 	with catalogoDuplicados as
 	(
 		select nombre, precio, row_number() over(partition by nombre, precio order by nombre, precio) as duplicados
-		from catalogo.Catalogo
+		from catalogo.Producto
 	)
 	delete from catalogoDuplicados where duplicados > 1;
 
 	insert into catalogo.PerteneceA(idCategoria, idProd)
-	select c.id, ca.id
-	from #electronicTemp t join catalogo.Catalogo ca on ca.nombre = t.nombre and ca.precioUSD = t.precio, catalogo.Categoria c
-	where not exists (select 1 from catalogo.PerteneceA p where p.idCategoria = c.id and p.idProd = ca.id ) and c.categoria like 'electronica'
+	select c.id, pr.id
+	from #electronicTemp t join catalogo.Producto pr on pr.nombre = t.nombre and pr.precioUSD = t.precio, catalogo.Categoria c
+	where not exists (select 1 from catalogo.PerteneceA p where p.idCategoria = c.id and p.idProd = pr.id ) and c.categoria like 'electronica'
 
 	drop table #electronicTemp
 end
@@ -335,19 +346,19 @@ begin
 	with catalogoDuplicados as
 	(
 		select nombre, precio, row_number() over(partition by nombre, precio order by nombre, precio) as duplicados
-		from catalogo.Catalogo
+		from catalogo.Producto
 	)
 	delete from catalogoDuplicados where duplicados > 1;
 
-	insert into catalogo.Catalogo (idProd, nombre, proveedor, cantXUn, precio)
+	insert into catalogo.Producto (idProd, nombre, proveedor, cantXUn, precio)
 	select id, nombre, proveedor, cantidad, precio
 	from #importTemp t 
-	where not exists (select 1 from catalogo.Catalogo c where c.idProd = t.id and c.nombre = t.nombre)
+	where not exists (select 1 from catalogo.Producto p where p.idProd = t.id and p.nombre = t.nombre)
 
 	insert into catalogo.PerteneceA(idCategoria, idProd)
-	select c.id, ca.id
-	from #importTemp t join catalogo.Categoria c on c.categoria = t.categoria join catalogo.Catalogo ca on ca.nombre = t.nombre and ca.precio = t.precio
-	where not exists (select 1 from catalogo.PerteneceA p where p.idCategoria = c.id and p.idProd = ca.id )
+	select c.id, pr.id
+	from #importTemp t join catalogo.Categoria c on c.categoria = t.categoria join catalogo.Producto pr on pr.nombre = t.nombre and pr.precio = t.precio
+	where not exists (select 1 from catalogo.PerteneceA p where p.idCategoria = c.id and p.idProd = pr.id )
 
 	drop table #importTemp
 end
@@ -438,12 +449,12 @@ begin
 	update #ventasTemp
 	set nomProd = replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(nomProd, 'Ã±', 'ñ'), 'Ã³', 'ó'), 'Ã©', 'é'), 'Ã¡', 'á'), 'Ãº', 'ú'), 'Ã­', 'í'), 'ÃƒÂº', 'ú'), 'Ã‘', 'Ñ') , 'Ã', 'Á'), '?', 'ñ'), 'Ã‘', 'Ñ'), 'Âº' , 'º'), 'å˜', 'ñ'), 'Águila', 'Águila')
 
-	insert into ventas.VentaRegistrada(idFactura, tipoFactura, ciudadCliente, tipoCliente, genero, precioUn, cantidad, fecha, hora, empleadoLeg, idPago, medioPago, idProd)
+	insert into ventas.Venta(idFactura, tipoFactura, ciudadCliente, tipoCliente, genero, precioUn, cantidad, fecha, hora, empleadoLeg, idPago, medioPago, idProd)
 	select t.idFactura, t.tipo, t.ciudad, t.tipoCliente, t.genero, t.precioUn, t.cantidad, 
 		convert(date, t.fecha, 101) as Fecha,  
-		t.hora, t.empleado, t.idPago, m.id, c.idProd
-	from #ventasTemp t join ventas.MedioDePago m on m.nombreIng = t.medioPago join catalogo.Catalogo c on c.nombre =  t.nomProd and c.precio = t.precioUn
-	where not exists (select 1 from ventas.VentaRegistrada v where v.idFactura = t.idFactura and v.tipoFactura = t.tipo)
+		t.hora, t.empleado, t.idPago, m.id, p.idProd
+	from #ventasTemp t join ventas.MedioDePago m on m.nombreIng = t.medioPago join catalogo.Producto p on p.nombre =  t.nomProd and p.precio = t.precioUn
+	where not exists (select 1 from ventas.Venta v where v.idFactura = t.idFactura and v.tipoFactura = t.tipo)
 
 	drop table #ventasTemp
 end
@@ -470,29 +481,33 @@ select * from catalogo.Categoria
 exec importar.importarCatalogo 'C:\TP_integrador_Archivos\Productos\catalogo.csv'
 exec importar.importarAccesoriosElectronicos 'C:\TP_integrador_Archivos\Productos\Electronic accessories.xlsx'
 exec importar.importarProductosImportados 'C:\TP_integrador_Archivos\Productos\Productos_importados.xlsx'
-select * from catalogo.Catalogo where nombre like '70% Alcohol limpieza hogar Bosque Verde' and precio = 1.8
-select * from catalogo.PerteneceA order by idProd
+select * from catalogo.Producto where nombre like '70% Alcohol limpieza hogar Bosque Verde' and precio = 1.8
+select * from(
+	select c.idProd, c.nombre , row_number() over(partition by p.idProd order by p.idProd) as a 
+	from catalogo.PerteneceA p join catalogo.Producto c on c.idProd = p.idProd
+	) b
+	where a > 1
 select * from catalogo.PerteneceA where idProd = 6029
 
 exec importar.AgregarLineasDeProducto
 select * from catalogo.Categoria
 
 exec importar.importarVentas 'C:\TP_integrador_Archivos\Ventas_registradas.csv'
-select * from ventas.VentaRegistrada
+select * from ventas.Venta
 
-select distinct unidadRef from catalogo.Catalogo
-select distinct cantXUn from catalogo.Catalogo
+select distinct unidadRef from catalogo.Producto
+select distinct cantXUn from catalogo.Producto
 
 */
 
 /*
-truncate table ventas.ventaRegistrada
+truncate table ventas.Venta
 truncate table catalogo.Sucursal
 truncate table recursosHumanos.Empleado
 truncate table recursosHumanos.Cargo
 truncate table ventas.MedioDePago
 truncate table catalogo.LineaProducto
-truncate table catalogo.Catalogo
+truncate table catalogo.Producto
 */
 
 

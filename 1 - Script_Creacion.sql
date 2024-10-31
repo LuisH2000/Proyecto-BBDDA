@@ -30,8 +30,6 @@ use master
 go
 drop database Com5600G13
 
-ALTER DATABASE Com5600G13
-SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
 */
 
 if not exists (select name from master.dbo.sysdatabases where name = 'Com5600G13')
@@ -87,9 +85,9 @@ end
 go
 
 if not exists (select * from information_schema.tables where
-	table_schema = 'catalogo' and table_name = 'Catalogo')
+	table_schema = 'catalogo' and table_name = 'Producto')
 begin
-	create table catalogo.Catalogo
+	create table catalogo.Producto
 	(
 		id int identity(1,1) primary key,
 		idProd int,
@@ -127,7 +125,7 @@ begin
 		idCategoria int,
 		idProd int,
 		constraint FK_Categoria foreign key (idCategoria) references catalogo.Categoria(id),
-		constraint FK_Producto foreign key (idProd) references catalogo.Catalogo(id)
+		constraint FK_Producto foreign key (idProd) references catalogo.Producto(id)
 	)
 end
 
@@ -187,9 +185,9 @@ begin
 end
 
 if not exists (select * from information_schema.tables where
-	table_schema = 'ventas' and table_name = 'VentaRegistrada')
+	table_schema = 'ventas' and table_name = 'Venta')
 begin
-	create table ventas.VentaRegistrada
+	create table ventas.Venta
 	(
 		id int identity(1,1) primary key,
 		idFactura char(11) unique,
@@ -206,7 +204,7 @@ begin
 		empleadoLeg int,
 		idPago char(23),
 		
-		constraint FK_Prod foreign key (idProd) references catalogo.Catalogo(id),
+		constraint FK_Prod foreign key (idProd) references catalogo.Producto(id),
 		constraint FK_MedPago foreign key (medioPago) references ventas.MedioDePago(id),
 		constraint FK_Empleado foreign key (empleadoLeg) references recursosHumanos.Empleado(legajo),
 		constraint FK_Cliente foreign key (tipoCliente) references ventas.TipoCliente(tipo)
@@ -228,5 +226,5 @@ if not exists (
     where name = 'IX_FacturaID' AND object_id = object_id('ventas.VentaRegistrada')
 )
 begin
-    create index IX_FacturaID on ventas.VentaRegistrada (idFactura);
+    create index IX_FacturaID on ventas.Venta (idFactura);
 end
