@@ -152,11 +152,11 @@ begin
 		emailPer varchar(60) unique,
 		emailEmp varchar(60) unique,
 		cuil char(13),
-		cargo varchar(20),
+		cargo int,
 		sucursal varchar(20),
 		turno varchar(20) check(turno in ('TM', 'TT', 'Jornada Completa')),
 		activo int default 1,
-		constraint FK_Cargo foreign key (cargo) references recursosHumanos.Cargo(cargo),
+		constraint FK_Cargo foreign key (cargo) references recursosHumanos.Cargo(id),
 		constraint FK_Surcursal foreign key (sucursal) references catalogo.Sucursal(sucursal)
 	)
 end
@@ -212,13 +212,16 @@ begin
 end
 go
 
-/*create trigger insertarEnCatalogoTrigger
-on catalogo.Catalogo
-instead of insert
-as
-begin
-    if exists (select)
-end*/
+/*
+	crear sp para insertar ventas (verificar que tipo de producto es, si es electronico llamar al sp del dolar) y productos (tener en cuenta agregar el registro a la pertenece a)
+	crear sp para update producto, empleado(dar de baja)
+	crear sp para delete producto y empleado (dar de baja)
+
+	crear sp para crear una nota de credito
+
+	preguntas por los id de pago para hacer la nota de credito, verificar los id con un check
+	preguntar donde meter las notas de credito
+*/
 
 if not exists (
     select 1 

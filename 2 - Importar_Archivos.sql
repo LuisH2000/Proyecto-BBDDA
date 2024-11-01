@@ -123,7 +123,8 @@ begin
 			and not exists(select 1 from recursosHumanos.Cargo c where c.cargo = t.cargo)
 
 	insert into recursosHumanos.Empleado(legajo, nombre, apellido, dni, direccion, emailPer, emailEmp, cuil, cargo, sucursal, turno)
-	select legajo, nombre, apellido, dni, direccion, emailPer, emailEmp, cuil, cargo, sucursal, turno from #empTemp t
+	select legajo, nombre, apellido, dni, direccion, emailPer, emailEmp, cuil, c.id, sucursal, turno 
+	from #empTemp t join recursosHumanos.Cargo c on c.cargo = t.cargo
 	where legajo is not null
 			and not exists(select 1 from recursosHumanos.Empleado e where e.legajo = t.legajo)
 
@@ -229,17 +230,6 @@ begin
 
 	update #catalogoTemp
 	set nombre = replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(nombre, '?', 'ñ'), 'Ã³', 'ó'), 'Ã©', 'é'), 'Ã¡', 'á'), 'Ãº', 'ú'), 'Ã­', 'í'), 'ÃƒÂº', 'ú'), 'Ã‘', 'Ñ'), 'Âº' , 'º'), 'å˜', 'ñ') , 'Ã', 'Á');
-	/*
-	with catalogoTempDuplicados as
-	(
-		select id, nombre, precio, precioRef, unidadRef, fecha, row_number() over(partition by nombre, precio order by id) as duplicados
-		from #catalogoTemp 
-	)
-	insert into catalogo.Producto(idProd, nombre, precio, precioRef, unidadRef, fecha)
-	select id, nombre, precio, precioRef, unidadRef, fecha
-	from catalogoTempDuplicados t
-	where not exists (select 1 from catalogo.Producto p where p.nombre = t.nombre and p.precio = t.precio) and duplicados = 1
-	*/
 
 	insert into catalogo.Producto(idProd, nombre, precio, precioRef, unidadRef, fecha)
 	select id, nombre, precio, precioRef, unidadRef, fecha
@@ -481,13 +471,13 @@ select * from catalogo.Categoria
 exec importar.importarCatalogo 'C:\TP_integrador_Archivos\Productos\catalogo.csv'
 exec importar.importarAccesoriosElectronicos 'C:\TP_integrador_Archivos\Productos\Electronic accessories.xlsx'
 exec importar.importarProductosImportados 'C:\TP_integrador_Archivos\Productos\Productos_importados.xlsx'
-select * from catalogo.Producto where nombre like '70% Alcohol limpieza hogar Bosque Verde' and precio = 1.8
+select * from catalogo.Producto where nombre like '70% Alcohol limpieza hogar Bosque Verde'
 select * from(
 	select c.idProd, c.nombre , row_number() over(partition by p.idProd order by p.idProd) as a 
-	from catalogo.PerteneceA p join catalogo.Producto c on c.idProd = p.idProd
+	from catalogo.PerteneceA p join catalogo.Producto c on c.id = p.idProd
 	) b
-	where a > 1
-select * from catalogo.PerteneceA where idProd = 6029
+where a > 1
+select * from catalogo.PerteneceA where idProd = 352
 
 exec importar.AgregarLineasDeProducto
 select * from catalogo.Categoria
