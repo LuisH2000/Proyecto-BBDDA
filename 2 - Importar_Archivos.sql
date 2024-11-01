@@ -5,9 +5,9 @@ Grupo 13
 Bases de Datos Aplicadas
 
 Alumnos:
-	-
-	-
-	-
+	- Diaz, Nicolas 41714473
+	- Huang, Luis 43098142
+	- Rolleri Vilalba, Santino 46026386
 
 **ENUNCIADO**
 Se proveen los archivos en el TP_integrador_Archivos.zip 

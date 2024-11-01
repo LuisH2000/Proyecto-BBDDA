@@ -5,9 +5,9 @@ Grupo 13
 Bases de Datos Aplicadas
 
 Alumnos:
-	-
-	-
-	-
+	- Diaz, Nicolas 41714473
+	- Huang, Luis 43098142
+	- Rolleri Vilalba, Santino 46026386
 
 **ENUNCIADO**
 Luego de decidirse por un motor de base de datos relacional, llegó el momento de generar la 
@@ -29,7 +29,6 @@ en la creación de objetos. NO use el esquema “dbo”.
 use master 
 go
 drop database Com5600G13
-
 */
 
 if not exists (select name from master.dbo.sysdatabases where name = 'Com5600G13')
@@ -226,7 +225,7 @@ go
 if not exists (
     select 1 
     from sys.indexes 
-    where name = 'IX_FacturaID' AND object_id = object_id('ventas.VentaRegistrada')
+    where name = 'IX_FacturaID' AND object_id = object_id('ventas.Venta')
 )
 begin
     create index IX_FacturaID on ventas.Venta (idFactura);
