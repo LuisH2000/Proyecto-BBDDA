@@ -152,9 +152,9 @@ begin
 		return
 	end catch
 
-	insert into ventas.MedioDePago(nombreIng, nombreEsp)
+	insert into comprobantes.MedioDePago(nombreIng, nombreEsp)
 	select nomIng, nomEsp from #mpTemp t
-	where not exists (select 1 from ventas.MedioDePago m where m.nombreEsp = t.nomEsp and m.nombreIng = t.nomIng)
+	where not exists (select 1 from comprobantes.MedioDePago m where m.nombreEsp = t.nomEsp and m.nombreIng = t.nomIng)
 
 	drop table #mpTemp
 end
@@ -390,7 +390,7 @@ begin
 	where categoria like 'Carnes'
 end
 go
-
+/*
 create or alter proc importar.importarVentas @dir varchar(200)
 as
 begin
@@ -431,7 +431,7 @@ begin
 		return
 	end catch
 
-	insert into ventas.TipoCliente 
+	insert into clientes.TipoCliente 
 	select distinct tipoCliente from #ventasTemp t
 	where not exists (select 1 from ventas.TipoCliente c where c.tipo = t.tipoCliente)
 	
@@ -449,7 +449,7 @@ begin
 	drop table #ventasTemp
 end
 go
-
+*/
 /*
 use master
 exec importar.configurarImportacionArchivosExcel

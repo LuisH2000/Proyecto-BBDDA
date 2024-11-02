@@ -58,6 +58,19 @@ begin
 end
 go
 
+if not exists (select * from sys.schemas where name = 'clientes')
+begin
+	exec('create schema clientes')
+end
+go
+
+
+if not exists (select * from sys.schemas where name = 'comprobantes')
+begin
+	exec('create schema comprobantes')
+end
+go
+
 if not exists (select * from information_schema.tables where
 	table_schema = 'catalogo' and table_name = 'Sucursal')
 begin
@@ -162,9 +175,57 @@ end
 go
 
 if not exists (select * from information_schema.tables where
-	table_schema = 'ventas' and table_name = 'MedioDePago')
+	table_schema = 'clientes' and table_name = 'TipoCliente')
 begin
-	create table ventas.MedioDePago
+	create table clientes.TipoCliente
+	(
+		id int identity(1,1) primary key,
+		tipo char(6) unique
+	)
+end
+
+if not exists (select * from information_schema.tables where
+	table_schema = 'ventas' and table_name = 'Factura')
+begin
+	create table ventas.Factura
+	(
+		id int identity(1,1) primary key,
+		idFactura char(11) unique,
+		tipoFactura char(1) check(tipoFactura in ('A', 'B', 'C')),
+		fecha date,
+		hora time,
+		empleadoLeg int,
+		ciudadCliente varchar(20),
+		genero char(6) check(genero in ('Male', 'Female')),
+		idTipoCliente int,
+		estado char(6) check(estado in ('Pagada', 'Impaga')),
+		constraint FK_Empleado foreign key (empleadoLeg) references recursosHumanos.Empleado(legajo),
+		constraint FK_TipoCliente foreign key (idTipoCliente) references clientes.TipoCliente(id)
+	)
+end
+go
+
+if not exists (select * from information_schema.tables where
+	table_schema = 'ventas' and table_name = 'LineaDeFactura')
+begin
+	create table ventas.LineaDeFactura
+	(
+		id int identity(1,1) primary key,
+		idFactura int,
+		nroLinea int,
+		idProd int,
+		precioUn decimal(6,2),
+		cantidad int,
+		subtotal decimal(9,2),
+		constraint FK_Factura foreign key (idFactura) references ventas.Factura(id),
+		constraint FK_Prod foreign key (idProd) references catalogo.Producto(id)
+	)
+end
+
+if not exists (select * from information_schema.tables where
+	table_schema = 'comprobantes' and table_name = 'MedioDePago')
+begin
+	create table comprobantes.MedioDePago
 	(
 		id int identity(1,1) primary key,
 		nombreIng varchar(11) unique,
@@ -174,39 +235,17 @@ end
 go
 
 if not exists (select * from information_schema.tables where
-	table_schema = 'ventas' and table_name = 'TipoCliente')
+	table_schema = 'comprobantes' and table_name = 'Comprobante')
 begin
-	create table ventas.TipoCliente
+	create table comprobantes.Comprobante
 	(
 		id int identity(1,1) primary key,
-		tipo char(6) unique
-	)
-end
-
-if not exists (select * from information_schema.tables where
-	table_schema = 'ventas' and table_name = 'Venta')
-begin
-	create table ventas.Venta
-	(
-		id int identity(1,1) primary key,
-		idFactura char(11) unique,
-		tipoFactura char(1) check(tipoFactura in ('A', 'B', 'C')),
-		ciudadCliente varchar(20),
-		tipoCliente char(6),
-		genero char(6) check(genero in ('Male', 'Female')),
-		idProd int,
-		precioUn decimal(6,2),
-		cantidad int,
-		fecha date,
-		hora time,
-		medioPago int,
-		empleadoLeg int,
-		idPago char(23),
-		
-		constraint FK_Prod foreign key (idProd) references catalogo.Producto(id),
-		constraint FK_MedPago foreign key (medioPago) references ventas.MedioDePago(id),
-		constraint FK_Empleado foreign key (empleadoLeg) references recursosHumanos.Empleado(legajo),
-		constraint FK_Cliente foreign key (tipoCliente) references ventas.TipoCliente(tipo)
+		tipoComprobante varchar(15) check(tipoComprobante in ('Factura', 'Nota de Credito')),
+		idPago char(23) unique,
+		idMedPago int,
+		idFactura int,
+		constraint FK_MedPago foreign key (idMedPago) references comprobantes.MedioDePago(id),
+		constraint FK_Comprobante_Factura foreign key (idFactura) references ventas.Factura(id)
 	)
 end
 go
@@ -221,12 +260,13 @@ go
 	preguntas por los id de pago para hacer la nota de credito, verificar los id con un check
 	preguntar donde meter las notas de credito
 */
-
+/*
 if not exists (
     select 1 
     from sys.indexes 
-    where name = 'IX_FacturaID' AND object_id = object_id('ventas.Venta')
+    where name = 'IX_FacturaID' AND object_id = object_id('ventas.Factura')
 )
 begin
     create index IX_FacturaID on ventas.Venta (idFactura);
 end
+*/

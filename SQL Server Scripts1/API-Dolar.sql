@@ -22,7 +22,7 @@ begin
 
 	DECLARE @datos NVARCHAR(MAX) = (SELECT DATA FROM @json)
 
-	SELECT @precio = venta FROM OPENJSON(@datos)
+	SELECT @precio = compra FROM OPENJSON(@datos)
 	WITH
 	(
 		[moneda] varchar(50) '$.moneda',
@@ -36,4 +36,4 @@ end
 
 declare @pre decimal(6,2)
 exec obtenerPrecioDolar @precio = @pre output
-PRINT 'El precio del producto es: ' + CAST(@pre AS NVARCHAR(10));
+PRINT 'El precio del dolar es: ' + CAST(@pre AS NVARCHAR(10));
