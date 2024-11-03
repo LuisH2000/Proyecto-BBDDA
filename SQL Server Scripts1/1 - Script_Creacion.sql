@@ -77,10 +77,11 @@ begin
 	create table catalogo.Sucursal
 	(
 		id int identity (1,1) primary key,
-		sucursal varchar(20) unique,
+		sucursal varchar(20),
 		direccion varchar(100) unique,
 		horario varchar(50),
-		telefono char(9)
+		telefono char(9),
+		activo int default 1
 	)
 end
 go
@@ -165,11 +166,11 @@ begin
 		emailEmp varchar(60) unique,
 		cuil char(13),
 		cargo int,
-		sucursal varchar(20),
+		idSucursal int,
 		turno varchar(20) check(turno in ('TM', 'TT', 'Jornada Completa')),
 		activo int default 1,
 		constraint FK_Cargo foreign key (cargo) references recursosHumanos.Cargo(id),
-		constraint FK_Surcursal foreign key (sucursal) references catalogo.Sucursal(sucursal)
+		constraint FK_Surcursal foreign key (idSucursal) references catalogo.Sucursal(id)
 	)
 end
 go
@@ -198,7 +199,7 @@ begin
 		ciudadCliente varchar(20),
 		genero char(6) check(genero in ('Male', 'Female')),
 		idTipoCliente int,
-		estado char(6) check(estado in ('Pagada', 'Impaga')),
+		estado char(6) default 'Impaga' check(estado in ('Pagada', 'Impaga')),
 		constraint FK_Empleado foreign key (empleadoLeg) references recursosHumanos.Empleado(legajo),
 		constraint FK_TipoCliente foreign key (idTipoCliente) references clientes.TipoCliente(id)
 	)
@@ -212,7 +213,6 @@ begin
 	(
 		id int identity(1,1) primary key,
 		idFactura int,
-		nroLinea int,
 		idProd int,
 		precioUn decimal(6,2),
 		cantidad int,
@@ -241,7 +241,7 @@ begin
 	(
 		id int identity(1,1) primary key,
 		tipoComprobante varchar(15) check(tipoComprobante in ('Factura', 'Nota de Credito')),
-		idPago char(23) unique,
+		idPago char(23),
 		idMedPago int,
 		idFactura int,
 		constraint FK_MedPago foreign key (idMedPago) references comprobantes.MedioDePago(id),
@@ -251,15 +251,36 @@ end
 go
 
 /*
-	crear sp para insertar ventas (verificar que tipo de producto es, si es electronico llamar al sp del dolar) y productos (tener en cuenta agregar el registro a la pertenece a)
-	crear sp para update producto, empleado(dar de baja)
-	crear sp para delete producto y empleado (dar de baja)
+	Verificar en los sp de abm que no nos pasen parametros vacios como '   '
 
 	crear sp para crear una nota de credito
 
-	preguntas por los id de pago para hacer la nota de credito, verificar los id con un check
-	preguntar donde meter las notas de credito
+	abm 
+		sucursal, 
+		lineaproducto, 
+		producto (al agregar un producto, asegurarse de insertar a que categoria pertenece en PerteneceA), 
+		categoria (al agregar una categoria, vincular a la LineaProducto que pertenece), 
+		cargo, 
+		empleado, 
+		tipoCliente, 
+		factura (crear un sp que reciba una tabla con los productos a agregar a las lineadefactura,
+				verificar si el producto es electronica para calcular el precio con la API del dolar),
+		comprobante,
+		mediodepago
+
+		DUDAS:
+		consultas por que no puedo obtener el subtotal multiplicando precio * cantidad cuando importamos las ventas, 
+		porque hago los cast en la tabla temporal pero al multiplicar me dice que son varchar
+
+		al importar el archivo catalogo.csv, si importo la fecha con varchar y despues hago el cast a smalldatetime me 
+		dice que no se puede porque se va del rango, pero si en la tabla temporal ya es smalldatetime 
+		lo importa perfectamente
+
+		al importar los empleados, si en la tabla temporal, el dni es un varchar, lo importa con notacion cientifica por 
+		lo que no puedo castearlo a int, si lo casteo a float y despues a int, el numero se trunca. Si en la tabla temporal 
+		el dni es int, se importa perfectamente
 */
+
 /*
 if not exists (
     select 1 

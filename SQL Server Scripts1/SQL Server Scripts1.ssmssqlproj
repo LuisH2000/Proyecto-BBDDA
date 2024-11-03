@@ -40,6 +40,12 @@
           <AssociatedConnUserName />
           <FullPath>API-Dolar.sql</FullPath>
         </FileNode>
+        <FileNode Name="Testing_Importar_Archivos.sql">
+          <AssociatedConnectionMoniker>8c91a03d-f9b4-46c0-a305-b5dcc79ff907:DESKTOP-K2ACL7T\SQLEXPRESS:True</AssociatedConnectionMoniker>
+          <AssociatedConnSrvName>DESKTOP-K2ACL7T\SQLEXPRESS</AssociatedConnSrvName>
+          <AssociatedConnUserName />
+          <FullPath>Testing_Importar_Archivos.sql</FullPath>
+        </FileNode>
       </Items>
     </LogicalFolder>
     <LogicalFolder Name="Miscellaneous" Type="3" Sorted="true">

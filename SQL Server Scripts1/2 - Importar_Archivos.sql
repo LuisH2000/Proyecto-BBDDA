@@ -29,7 +29,6 @@ en el fuente SQL. (Sería una excepción si el archivo está malformado y no es pos
 interpretarlo como JSON o CSV).  
 */
 
---use master
 use Com5600G13
 go
 
@@ -56,12 +55,11 @@ as
 begin
 	create table #sucTemp
 	(
-		id int identity (1,1) primary key,
-		ciudad varchar(20),
-		sucursal varchar(20),
+		ciudad varchar(100),
+		sucursal varchar(100),
 		direccion varchar(100),
-		horario varchar(50),
-		telefono char(9)
+		horario varchar(100),
+		telefono varchar(100)
 	)
 
 	declare @sql nvarchar(MAX)
@@ -80,7 +78,7 @@ begin
 	end catch
 
 	insert into catalogo.Sucursal(sucursal, direccion, horario, telefono)
-	select sucursal, direccion, horario, telefono
+	select sucursal, direccion, horario, telefono 
 	from #sucTemp t
 	where not exists (select 1 from catalogo.Sucursal s where s.direccion = t.direccion)
 	drop table #sucTemp
@@ -91,23 +89,24 @@ create or alter proc importar.importarEmpleados @dir varchar(200)
 as
 begin
 	create table #empTemp (
-		legajo int,
-		nombre varchar(50),
-		apellido varchar(50),
+		legajo varchar(100),
+		nombre varchar(100),
+		apellido varchar(100),
 		dni int,
 		direccion varchar(100),
-		emailPer varchar(60),
-		emailEmp varchar(60),
-		cuil char(13),
-		cargo varchar(20),
-		sucursal varchar(20),
-		turno varchar(20))
+		emailPer varchar(100),
+		emailEmp varchar(100),
+		cuil varchar(100),
+		cargo varchar(100),
+		sucursal varchar(100),
+		turno varchar(100)
+	)
 
 	declare @sql nvarchar(MAX)
 	set @sql = 'insert into #empTemp
 				select *
 				from openrowset(''Microsoft.ACE.OLEDB.12.0'',
-				''Excel 12.0; Database=' + @dir + ''', [Empleados$])'
+				''Excel 12.0; Database=' + @dir + ';IMEX=1'', [Empleados$])'
 	begin try
 		exec sp_executesql @sql
 	end try
@@ -116,15 +115,22 @@ begin
 		print('Hubo un error en la carga, codigo de error OLE DB:'+cast(error_number() as varchar))
 		return
 	end catch
-
+	
+	update #empTemp
+	set
+		legajo = cast(legajo as int),
+		dni = cast(dni as int)
+		
 	insert into recursosHumanos.Cargo 
 	select distinct cargo from #empTemp t
 	where cargo is not null 
 			and not exists(select 1 from recursosHumanos.Cargo c where c.cargo = t.cargo)
 
-	insert into recursosHumanos.Empleado(legajo, nombre, apellido, dni, direccion, emailPer, emailEmp, cuil, cargo, sucursal, turno)
-	select legajo, nombre, apellido, dni, direccion, emailPer, emailEmp, cuil, c.id, sucursal, turno 
+	insert into recursosHumanos.Empleado(legajo, nombre, apellido, dni, direccion, emailPer, emailEmp, cuil, cargo, idSucursal,
+										turno)
+	select legajo, nombre, apellido, dni, t.direccion, emailPer, emailEmp, cuil, c.id, s.id, turno
 	from #empTemp t join recursosHumanos.Cargo c on c.cargo = t.cargo
+					join catalogo.Sucursal s on s.sucursal = t.sucursal
 	where legajo is not null
 			and not exists(select 1 from recursosHumanos.Empleado e where e.legajo = t.legajo)
 
@@ -135,7 +141,11 @@ go
 create or alter proc importar.importarMediosDePago @dir varchar(200)
 as
 begin
-	create table #mpTemp (col1 char(11), nomIng char(11), nomEsp char(22))
+	create table #mpTemp (
+		col1 varchar(100), 
+		nomIng varchar(100), 
+		nomEsp varchar(100)
+	)
 
 	declare @sql nvarchar(MAX)
 	set @sql = 'insert into #mpTemp
@@ -165,8 +175,8 @@ as
 begin
 	create table #clasifTemp
 	(
-		lineaProd varchar(10),
-		categoria varchar(50)
+		lineaProd varchar(100),
+		categoria varchar(100)
 	)
 	declare @sql nvarchar(MAX)
 	set @sql = 'insert into #clasifTemp
@@ -200,12 +210,12 @@ as
 begin
 	create table #catalogoTemp
 	(
-		id int primary key,
-		categoria varchar(50),
+		id varchar(100),
+		categoria varchar(100),
 		nombre varchar(100),
-		precio decimal(9,2),
-		precioRef decimal(9,2),
-		unidadRef varchar(10),
+		precio varchar(100),
+		precioRef varchar(100),
+		unidadRef varchar(100),
 		fecha smalldatetime
 	)
 	declare @sql nvarchar(MAX)
@@ -227,6 +237,13 @@ begin
 		print('Hubo un error en la carga, codigo de error OLE DB:'+cast(error_number() as varchar))
 		return
 	end catch
+
+	update #catalogoTemp
+	set
+		id = cast(id as int),
+		precio = cast(precio as decimal(9,2)),
+		precioRef = cast(precioRef as decimal(9,2)),
+		fecha = cast(fecha as smalldatetime)
 
 	update #catalogoTemp
 	set nombre = replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(nombre, '?', 'ñ'), 'Ã³', 'ó'), 'Ã©', 'é'), 'Ã¡', 'á'), 'Ãº', 'ú'), 'Ã­', 'í'), 'ÃƒÂº', 'ú'), 'Ã‘', 'Ñ'), 'Âº' , 'º'), 'å˜', 'ñ') , 'Ã', 'Á');
@@ -259,7 +276,7 @@ begin
 	(
 		id int identity(1,1) primary key,
 		nombre varchar(50),
-		precio decimal(9,2)
+		precio varchar(50)
 	)
 	declare @sql nvarchar(MAX)
 	set @sql = 'INSERT INTO #electronicTemp
@@ -281,22 +298,28 @@ begin
 		insert into catalogo.Categoria(categoria, idLineaProd) select 'electronica', id from catalogo.LineaProducto where lineaProd like 'Tecnologia'
 	end
 
+	update #electronicTemp
+	set
+		precio = cast(precio as decimal(9,2));
+		
+	with catalogoDuplicados as
+	(
+		select nombre, precio, row_number() over(partition by nombre, precio order by nombre, precio) as duplicados
+		from #electronicTemp
+	)
+	delete from catalogoDuplicados where duplicados > 1;
+
 	insert into catalogo.Producto(idProd, nombre, precioUSD)
 	select id, nombre, precio
 	from #electronicTemp t
 	where not exists (select 1 from catalogo.Producto p where p.precioUSD = t.precio and p.nombre = t.nombre);
 
-	with catalogoDuplicados as
-	(
-		select nombre, precio, row_number() over(partition by nombre, precio order by nombre, precio) as duplicados
-		from catalogo.Producto
-	)
-	delete from catalogoDuplicados where duplicados > 1;
-
 	insert into catalogo.PerteneceA(idCategoria, idProd)
 	select c.id, pr.id
 	from #electronicTemp t join catalogo.Producto pr on pr.nombre = t.nombre and pr.precioUSD = t.precio, catalogo.Categoria c
-	where not exists (select 1 from catalogo.PerteneceA p where p.idCategoria = c.id and p.idProd = pr.id ) and c.categoria like 'electronica'
+	where not exists 
+		(select 1 from catalogo.PerteneceA p where p.idCategoria = c.id and p.idProd = pr.id )
+													and c.categoria like 'electronica'
 
 	drop table #electronicTemp
 end
@@ -307,12 +330,12 @@ as
 begin
 	create table #importTemp
 	(
-		id int primary key,
-		nombre varchar(50),
-		proveedor varchar(50),
-		categoria varchar(20),
-		cantidad varchar(20),
-		precio decimal(9,2)
+		id varchar(100),
+		nombre varchar(100),
+		proveedor varchar(100),
+		categoria varchar(100),
+		cantidad varchar(100),
+		precio varchar(100)
 	)
 	declare @sql nvarchar(MAX)
 	set @sql = 'INSERT INTO #importTemp
@@ -327,6 +350,11 @@ begin
 		print('Hubo un error en la carga, codigo de error OLE DB:'+cast(error_number() as varchar))
 		return
 	end catch
+
+	update #importTemp
+	set
+		id = cast(id as int),
+		precio = cast(precio as decimal(9,2))
 
 	insert into catalogo.Categoria(categoria) 
 	select distinct categoria 
@@ -351,6 +379,8 @@ begin
 	where not exists (select 1 from catalogo.PerteneceA p where p.idCategoria = c.id and p.idProd = pr.id )
 
 	drop table #importTemp
+
+	exec importar.AgregarLineasDeProducto
 end
 go
 
@@ -390,25 +420,25 @@ begin
 	where categoria like 'Carnes'
 end
 go
-/*
+
 create or alter proc importar.importarVentas @dir varchar(200)
 as
 begin
 	create table #ventasTemp
 	(
-		idFactura char(11),
-		tipo char(1),
-		ciudad varchar(20),
-		tipoCliente char(6),
-		genero char(6),
+		idFactura varchar(100),
+		tipo varchar(100),
+		ciudadCliente varchar(100),
+		tipoCliente varchar(100),
+		genero varchar(100),
 		nomProd varchar(100),
-		precioUn decimal(6,2),
-		cantidad int,
-		fecha char(10),
-		hora time,
-		medioPago char(11),
-		empleado int,
-		idPago char(23)
+		precioUn varchar(100),
+		cantidad varchar(100),
+		fecha varchar(100),
+		hora varchar(100),
+		medioPago varchar(100),
+		empleado varchar(100),
+		idPago varchar(100)
 	)
 
 	declare @sql nvarchar(MAX)
@@ -431,74 +461,35 @@ begin
 		return
 	end catch
 
+	update #ventasTemp
+	set
+		precioUn =  cast(precioUn as decimal(6,2)),
+		cantidad = cast(cantidad as int),
+		hora = cast(hora as time),
+		empleado = cast(empleado as int)
+	
 	insert into clientes.TipoCliente 
 	select distinct tipoCliente from #ventasTemp t
-	where not exists (select 1 from ventas.TipoCliente c where c.tipo = t.tipoCliente)
+	where not exists (select 1 from clientes.TipoCliente c where c.tipo = t.tipoCliente)
 	
-
 	update #ventasTemp
 	set nomProd = replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(nomProd, 'Ã±', 'ñ'), 'Ã³', 'ó'), 'Ã©', 'é'), 'Ã¡', 'á'), 'Ãº', 'ú'), 'Ã­', 'í'), 'ÃƒÂº', 'ú'), 'Ã‘', 'Ñ') , 'Ã', 'Á'), '?', 'ñ'), 'Ã‘', 'Ñ'), 'Âº' , 'º'), 'å˜', 'ñ'), 'Águila', 'Águila')
+	
+	insert into ventas.Factura(idFactura, tipoFactura, ciudadCliente, idTipoCliente, genero, fecha, hora, empleadoLeg, estado)
+	select t.idFactura, t.tipo, t.ciudadCliente, c.id, t.genero, convert(date, t.fecha, 101) as Fecha, t.hora, t.empleado, 'Pagada'
+	from #ventasTemp t join clientes.TipoCliente c on c.tipo = t.tipoCliente
+	where not exists (select 1 from ventas.Factura v where v.idFactura = t.idFactura and v.tipoFactura = t.tipo)
 
-	insert into ventas.Venta(idFactura, tipoFactura, ciudadCliente, tipoCliente, genero, precioUn, cantidad, fecha, hora, empleadoLeg, idPago, medioPago, idProd)
-	select t.idFactura, t.tipo, t.ciudad, t.tipoCliente, t.genero, t.precioUn, t.cantidad, 
-		convert(date, t.fecha, 101) as Fecha,  
-		t.hora, t.empleado, t.idPago, m.id, p.idProd
-	from #ventasTemp t join ventas.MedioDePago m on m.nombreIng = t.medioPago join catalogo.Producto p on p.nombre =  t.nomProd and p.precio = t.precioUn
-	where not exists (select 1 from ventas.Venta v where v.idFactura = t.idFactura and v.tipoFactura = t.tipo)
+	insert into comprobantes.Comprobante(tipoComprobante, idPago, idMedPago, idFactura)
+	select 'Factura', t.idPago, m.id, fa.id
+	from #ventasTemp t join comprobantes.MedioDePago m on m.nombreIng = t.medioPago join ventas.Factura fa on fa.idFactura = t.idFactura
+	where not exists (select 1 from comprobantes.Comprobante c where c.idPago = t.idPago)
+
+	insert into ventas.LineaDeFactura(idFactura, idProd, precioUn, cantidad, subtotal)
+	select fa.id , p.id, t.precioUn, t.cantidad, (cast(t.precioUn as decimal(6,2)) * cast(t.cantidad as int))
+	from #ventasTemp t join catalogo.Producto p on p.nombre = t.nomProd and p.precio = t.precioUn join ventas.Factura fa on fa.idFactura = t.idFactura 
+	where not exists( select 1 from ventas.LineaDeFactura f where fa.idFactura = t.idFactura and f.idProd = p.id and f.precioUn = t.precioUn)
 
 	drop table #ventasTemp
 end
 go
-*/
-/*
-use master
-exec importar.configurarImportacionArchivosExcel
-
-exec importar.importarSucursal 'C:\TP_integrador_Archivos\Informacion_complementaria.xlsx'
-select * from catalogo.Sucursal
-
-exec importar.importarEmpleados 'C:\TP_integrador_Archivos\Informacion_complementaria.xlsx'
-select * from recursosHumanos.Cargo
-select * from recursosHumanos.Empleado
-
-exec importar.importarMediosDePago 'C:\TP_integrador_Archivos\Informacion_complementaria.xlsx'
-select * from ventas.MedioDePago
-
-exec importar.importarClasificacion 'C:\TP_integrador_Archivos\Informacion_complementaria.xlsx'
-select * from catalogo.LineaProducto 
-select * from catalogo.Categoria 
-
-exec importar.importarCatalogo 'C:\TP_integrador_Archivos\Productos\catalogo.csv'
-exec importar.importarAccesoriosElectronicos 'C:\TP_integrador_Archivos\Productos\Electronic accessories.xlsx'
-exec importar.importarProductosImportados 'C:\TP_integrador_Archivos\Productos\Productos_importados.xlsx'
-select * from catalogo.Producto where nombre like '70% Alcohol limpieza hogar Bosque Verde'
-select * from(
-	select c.idProd, c.nombre , row_number() over(partition by p.idProd order by p.idProd) as a 
-	from catalogo.PerteneceA p join catalogo.Producto c on c.id = p.idProd
-	) b
-where a > 1
-select * from catalogo.PerteneceA where idProd = 352
-
-exec importar.AgregarLineasDeProducto
-select * from catalogo.Categoria
-
-exec importar.importarVentas 'C:\TP_integrador_Archivos\Ventas_registradas.csv'
-select * from ventas.Venta
-
-select distinct unidadRef from catalogo.Producto
-select distinct cantXUn from catalogo.Producto
-
-*/
-
-/*
-truncate table ventas.Venta
-truncate table catalogo.Sucursal
-truncate table recursosHumanos.Empleado
-truncate table recursosHumanos.Cargo
-truncate table ventas.MedioDePago
-truncate table catalogo.LineaProducto
-truncate table catalogo.Producto
-*/
-
-
-
