@@ -7,7 +7,7 @@ exec importar.configurarImportacionArchivosExcel
 --1. Importamos las sucursales, esperamos que importe 3 registros
 --2. Ejecutar dos veces el proc para verificar que no se inserten duplicados
 exec importar.importarSucursal 'C:\TP_integrador_Archivos\Informacion_complementaria.xlsx'
-select * from catalogo.Sucursal
+select * from sucursales.Sucursal
 
 --1. Importamos los empleados y los distintos cargos, esperamos 15 empleados y 3 cargos
 --2. Ejecutar dos veces el proc para verificar que no se inserten duplicados
@@ -77,3 +77,14 @@ select * from ventas.Factura
 select * from ventas.LineaDeFactura
 select * from comprobantes.Comprobante
 
+/*
+exec importar.importarSucursal 'C:\TP_integrador_Archivos\Informacion_complementaria.xlsx'
+exec importar.importarEmpleados 'C:\TP_integrador_Archivos\Informacion_complementaria.xlsx'
+exec importar.importarMediosDePago 'C:\TP_integrador_Archivos\Informacion_complementaria.xlsx'
+exec importar.importarClasificacion 'C:\TP_integrador_Archivos\Informacion_complementaria.xlsx'
+exec importar.importarCatalogo 'C:\TP_integrador_Archivos\Productos\catalogo.csv'
+exec importar.importarAccesoriosElectronicos 'C:\TP_integrador_Archivos\Productos\Electronic accessories.xlsx'
+exec importar.importarProductosImportados 'C:\TP_integrador_Archivos\Productos\Productos_importados.xlsx'
+exec importar.importarCatalogo 'C:\TP_integrador_Archivos\Productos\catalogo.csv'
+exec importar.importarVentas 'C:\TP_integrador_Archivos\Ventas_registradas.csv'
+*/

@@ -71,17 +71,24 @@ begin
 end
 go
 
-if not exists (select * from information_schema.tables where
-	table_schema = 'catalogo' and table_name = 'Sucursal')
+if not exists (select * from sys.schemas where name = 'sucursales')
 begin
-	create table catalogo.Sucursal
+	exec('create schema sucursales')
+end
+go
+
+if not exists (select * from information_schema.tables where
+	table_schema = 'sucursales' and table_name = 'Sucursal')
+begin
+	create table sucursales.Sucursal
 	(
 		id int identity (1,1) primary key,
-		sucursal varchar(20),
-		direccion varchar(100) unique,
+		ciudad varchar(20),
+		direccion varchar(100),
 		horario varchar(50),
 		telefono char(9),
 		activo int default 1
+		constraint unique_sucursal UNIQUE (ciudad, direccion)
 	)
 end
 go
@@ -170,7 +177,7 @@ begin
 		turno varchar(20) check(turno in ('TM', 'TT', 'Jornada Completa')),
 		activo int default 1,
 		constraint FK_Cargo foreign key (cargo) references recursosHumanos.Cargo(id),
-		constraint FK_Surcursal foreign key (idSucursal) references catalogo.Sucursal(id)
+		constraint FK_Surcursal foreign key (idSucursal) references sucursales.Sucursal(id)
 	)
 end
 go

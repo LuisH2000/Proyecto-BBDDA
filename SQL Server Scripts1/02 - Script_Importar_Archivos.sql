@@ -77,10 +77,10 @@ begin
 		return
 	end catch
 
-	insert into catalogo.Sucursal(sucursal, direccion, horario, telefono)
+	insert into sucursales.Sucursal(ciudad, direccion, horario, telefono)
 	select sucursal, direccion, horario, telefono 
 	from #sucTemp t
-	where not exists (select 1 from catalogo.Sucursal s where s.direccion = t.direccion)
+	where not exists (select 1 from sucursales.Sucursal s where s.direccion = t.direccion)
 	drop table #sucTemp
 end
 go
@@ -130,7 +130,7 @@ begin
 										turno)
 	select legajo, nombre, apellido, dni, t.direccion, emailPer, emailEmp, cuil, c.id, s.id, turno
 	from #empTemp t join recursosHumanos.Cargo c on c.cargo = t.cargo
-					join catalogo.Sucursal s on s.sucursal = t.sucursal
+					join sucursales.Sucursal s on s.ciudad = t.sucursal
 	where legajo is not null
 			and not exists(select 1 from recursosHumanos.Empleado e where e.legajo = t.legajo)
 
@@ -325,6 +325,43 @@ begin
 end
 go
 
+create or alter proc importar.AgregarLineasDeProducto
+as
+begin
+	update catalogo.Categoria
+	set idLineaProd =  (select id from catalogo.LineaProducto where lineaProd like 'Bebidas')
+	where categoria like 'Bebidas'
+
+	update catalogo.Categoria
+	set idLineaProd =  (select id from catalogo.LineaProducto where lineaProd like 'Almacen')
+	where categoria like 'Condimentos'
+
+	update catalogo.Categoria
+	set idLineaProd =  (select id from catalogo.LineaProducto where lineaProd like 'Almacen')
+	where categoria like 'Granos/Cereales'
+
+	update catalogo.Categoria
+	set idLineaProd =  (select id from catalogo.LineaProducto where lineaProd like 'Almacen')
+	where categoria like 'Lácteos'
+
+	update catalogo.Categoria
+	set idLineaProd =  (select id from catalogo.LineaProducto where lineaProd like 'Almacen')
+	where categoria like 'Repostería'
+
+	update catalogo.Categoria
+	set idLineaProd =  (select id from catalogo.LineaProducto where lineaProd like 'Frescos')
+	where categoria like 'Frutas/Verduras'
+
+	update catalogo.Categoria
+	set idLineaProd =  (select id from catalogo.LineaProducto where lineaProd like 'Frescos')
+	where categoria like 'Pescado/Marisco'
+
+	update catalogo.Categoria
+	set idLineaProd =  (select id from catalogo.LineaProducto where lineaProd like 'Frescos')
+	where categoria like 'Carnes'
+end
+go
+
 create or alter proc importar.importarProductosImportados @dir varchar(200)
 as
 begin
@@ -381,43 +418,6 @@ begin
 	drop table #importTemp
 
 	exec importar.AgregarLineasDeProducto
-end
-go
-
-create or alter proc importar.AgregarLineasDeProducto
-as
-begin
-	update catalogo.Categoria
-	set idLineaProd =  (select id from catalogo.LineaProducto where lineaProd like 'Bebidas')
-	where categoria like 'Bebidas'
-
-	update catalogo.Categoria
-	set idLineaProd =  (select id from catalogo.LineaProducto where lineaProd like 'Almacen')
-	where categoria like 'Condimentos'
-
-	update catalogo.Categoria
-	set idLineaProd =  (select id from catalogo.LineaProducto where lineaProd like 'Almacen')
-	where categoria like 'Granos/Cereales'
-
-	update catalogo.Categoria
-	set idLineaProd =  (select id from catalogo.LineaProducto where lineaProd like 'Almacen')
-	where categoria like 'Lácteos'
-
-	update catalogo.Categoria
-	set idLineaProd =  (select id from catalogo.LineaProducto where lineaProd like 'Almacen')
-	where categoria like 'Repostería'
-
-	update catalogo.Categoria
-	set idLineaProd =  (select id from catalogo.LineaProducto where lineaProd like 'Frescos')
-	where categoria like 'Frutas/Verduras'
-
-	update catalogo.Categoria
-	set idLineaProd =  (select id from catalogo.LineaProducto where lineaProd like 'Frescos')
-	where categoria like 'Pescado/Marisco'
-
-	update catalogo.Categoria
-	set idLineaProd =  (select id from catalogo.LineaProducto where lineaProd like 'Frescos')
-	where categoria like 'Carnes'
 end
 go
 
