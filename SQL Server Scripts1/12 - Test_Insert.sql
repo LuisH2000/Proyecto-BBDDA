@@ -135,3 +135,41 @@ where lineaProd='Ocultos'
 --borramos el registro
 delete from catalogo.LineaProducto
 where lineaProd='Ocultos'
+
+--SP Para insertar un producto
+--intentamos ingresar un producto que ya existe
+exec catalogo.insertarProducto 1,'Banana',0.26,NULL,1.29,kg,NULL,NULL,'fruta'
+
+--intentemos ingresar un producto con precios negativos
+exec catalogo.insertarProducto 920392,'Bujias hescher',-0.26,NULL,-1.29,bujias,NULL,NULL,'fruta'
+
+--intentemos ingresar un producto sin aclarar la categoria
+exec catalogo.insertarProducto 920392,'Bujias hescher',0.26,NULL,1.29,bujias,NULL,NULL,''
+
+--Ahora ingresar uno donde la categoria no exista
+exec catalogo.insertarProducto 920392,'Bujias hescher',0.26,NULL,1.29,bujias,NULL,NULL,'Bujias'
+
+--Ahora ingresemos un registro valido
+exec catalogo.insertarProducto NULL,'fruta del dragon',3000,NULL,NULL,NULL,NULL,NULL,'fruta'
+
+--verificamos que se cargo correctamente en ambas tablas
+select p.id, p.nombre, p.precio, p.fecha, p.activo, c.categoria, lp.lineaProd from catalogo.Producto p
+inner join catalogo.perteneceA pa
+on p.id=pa.idProd
+inner join catalogo.Categoria c
+on c.id=pa.idCategoria
+inner join catalogo.LineaProducto lp
+on lp.id=c.idLineaProd
+where p.nombre='fruta del dragon'
+
+--borramos los registros
+
+declare @idProd int
+set @idProd=(select id from catalogo.Producto where nombre='fruta del dragon')
+delete from catalogo.PerteneceA
+where idProd=@idProd
+
+
+delete from catalogo.producto
+where nombre='fruta del dragon'
+

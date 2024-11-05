@@ -331,12 +331,88 @@ begin
 	insert into catalogo.LineaProducto (lineaProd)
 	values(@lineaProd)
 end
+go
 
+--SP Para ingresar un producto
+create or alter procedure catalogo.insertarProducto
+@idProd int, --puede ser null
+@nombre varchar(100), --no null
+@precio decimal(9,2), --no null y debe ser positivo
+@precioUSD decimal(9,2), --puede ser null pero si esta debe ser positivo
+@precioRef decimal(9,2), --puede ser null pero si esta debe ser positivo
+@unidadRef varchar(10), --puede ser null
+@proveedor varchar(50), --puede ser null
+@cantXUn varchar(20), --puede ser null
+@categoria varchar(50) --no null
+as
+begin
+	declare @idCat int
+	declare @idProductoTab int
+	declare @error varchar(max)=''
+	set @nombre=LTRIM(rtrim(@nombre))
+	set @unidadRef=LTRIM(rtrim(@unidadRef))
+	set @proveedor=LTRIM(rtrim(@proveedor))
+	set @cantXUn=LTRIM(rtrim(@cantXUn))
+	set @categoria=LTRIM(RTRIM(@categoria))
+	--Verificacion de nombre
+	if @nombre is null or @nombre=''
+	begin
+		set @error=@error+'No se ingreso un nombre de producto.'+CHAR(13)+CHAR(10)
+	end
+	--verificacion de que precio no es nulo y ademas es positivo
+	if @precio is null
+	begin
+		set @error=@error+'No se ingreso un precio para el producto.'+CHAR(13)+CHAR(10)
+	end
+	if @precio<0
+	begin
+		set @error=@error+'El precio del producto no puede ser negativo.'+CHAR(13)+CHAR(10)
+	end
+	--verificacion de precioUsd y precioRef positivos de no ser nulos
+	if @precioUSD is not null
+	begin
+		if @precioUSD<0
+			set @error=@error+'El precio en USD del producto no puede ser negativo.'+CHAR(13)+CHAR(10)
+	end
+	if @precioRef is not null
+	begin
+		if @precioRef<0
+			set @error=@error+'El precio de referencia no puede ser negativo.'+CHAR(13)+CHAR(10)
+	end
+	--verificacion de que categoria no es nula
+	if @categoria is null or @categoria=''
+		set @error=@error+'No se ingreso una categoria para el producto.'+CHAR(13)+CHAR(10)
+	--y si no es nula verificamos que la categoria existe
+	else
+	begin
+		set @idCat=(select id from catalogo.Categoria where categoria=@categoria)
+		if @idCat is null
+			set @error=@error+'La categoria ingresada no existe. Agreguela primero usando catalogo.insertarLineaProductoYCategoria y luego cargue este producto.'+CHAR(13)+CHAR(10)
+	end
+	--verificamos que la combinacion de idProd, nombre y precio sean unicos
+	if exists (select 1 from catalogo.Producto where idProd=@idProd and nombre=@nombre and precio=@precio)
+		set @error=@error+'El producto ingresado ya se encuentra registrado.'+CHAR(13)+CHAR(10)
+	--verificamos si hubo algun error
+	if @error<>''
+	begin
+		raiserror(@error,16,1)
+		return
+	end
+	--insertamos el producto
+	insert into catalogo.Producto(idProd, nombre, precio, precioUSD, precioRef, unidadRef, fecha, proveedor, cantXUn, activo)
+	values(@idProd,@nombre,@precio,@precioUSD,@precioRef,@unidadRef,cast(GETDATE() as smalldatetime),@proveedor,@cantXUn,1);
+	--obtenemos el id del producto para cargarlo en perteneceA
+	set @idProductoTab=(select id from catalogo.Producto where nombre='fruta del dragon' and idProd is null and precio=3000)
+	--Lo cargamos a perteneceA para establecer la relacion
+	insert into catalogo.PerteneceA(idCategoria, idProd)
+	values(@idCat,@idProductoTab)
+end
+go
 --EMPLEADO
 --CARGO
 --LINEAPRODUCTO
---PRODUCTO
 --CATEGORIA
+--PRODUCTO
 --TIPOCLIENTE
 --FACTURA (recibe una tabla con los productos a guardar en lineafactura)
 --MEDIODEPAGO
