@@ -77,6 +77,18 @@ begin
 end
 go
 
+if not exists (select * from sys.schemas where name = 'importar')
+begin
+	exec('create schema importar')
+end
+go
+
+if not exists (select * from sys.schemas where name = 'reportes')
+begin
+	exec('create schema reportes')
+end
+go
+
 if not exists (select * from information_schema.tables where
 	table_schema = 'sucursales' and table_name = 'Sucursal')
 begin
@@ -286,6 +298,11 @@ go
 		al importar los empleados, si en la tabla temporal, el dni es un varchar, lo importa con notacion cientifica por 
 		lo que no puedo castearlo a int, si lo casteo a float y despues a int, el numero se trunca. Si en la tabla temporal 
 		el dni es int, se importa perfectamente
+
+		de los informes, hay un informe que dice:
+		Trimestral: mostrar el total facturado por turnos de trabajo por mes.
+		el procedure debe recibir algo? el trimestre y el anio?
+		y mostrar el total facturado por turnos de trabajo para cada mes en ese trimestre
 */
 
 /*

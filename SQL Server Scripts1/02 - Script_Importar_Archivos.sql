@@ -32,12 +32,6 @@ interpretarlo como JSON o CSV).
 use Com5600G13
 go
 
-if not exists (select * from sys.schemas where name = 'importar')
-begin
-	exec('create schema importar')
-end
-go
-
 create or alter proc importar.configurarImportacionArchivosExcel
 as
 begin
