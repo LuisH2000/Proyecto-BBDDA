@@ -52,11 +52,11 @@
           <AssociatedConnUserName />
           <FullPath>05 - Script_ SP_Delete.sql</FullPath>
         </FileNode>
-        <FileNode Name="06 - Script_Informes.sql">
+        <FileNode Name="06 - Script_Reportes.sql">
           <AssociatedConnectionMoniker>8c91a03d-f9b4-46c0-a305-b5dcc79ff907:DESKTOP-K2ACL7T\SQLEXPRESS:True</AssociatedConnectionMoniker>
           <AssociatedConnSrvName>DESKTOP-K2ACL7T\SQLEXPRESS</AssociatedConnSrvName>
           <AssociatedConnUserName />
-          <FullPath>06 - Script_Informes.sql</FullPath>
+          <FullPath>06 - Script_Reportes.sql</FullPath>
         </FileNode>
         <FileNode Name="10 - Test_Importar_Archivos.sql">
           <AssociatedConnectionMoniker>8c91a03d-f9b4-46c0-a305-b5dcc79ff907:DESKTOP-K2ACL7T\SQLEXPRESS:True</AssociatedConnectionMoniker>

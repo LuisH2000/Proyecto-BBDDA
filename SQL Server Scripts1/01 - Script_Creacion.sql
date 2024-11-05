@@ -1,5 +1,5 @@
 /*
-Fecha de Entrega: --/--/----
+Fecha de Entrega: 15/11/2024
 Comision: 5600
 Grupo 13
 Bases de Datos Aplicadas
