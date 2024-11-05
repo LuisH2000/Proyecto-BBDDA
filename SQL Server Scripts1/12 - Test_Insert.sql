@@ -61,3 +61,77 @@ where legajo=300000
 delete from recursosHumanos.Empleado
 where legajo=300000
 
+--SP Para ingresar un cargo nuevo
+--Valida que el cargo no exista, intentemos ingresar uno que ya existe, por ejemplo, cajero
+exec recursosHumanos.insertarCargo 'cajero'
+--Ahora intentemos ingresar un cargo nuevo, ejemplo, conserje
+exec recursosHumanos.insertarCargo 'conSERje'
+
+--vemos que se cargo
+select * from recursosHumanos.cargo
+order by id
+
+--borramos el registro
+delete from recursosHumanos.Cargo
+where cargo='Conserje'
+
+--SP para insertar una nueva linea de Producto junto con su categoria (tal como venian en el archivo, de a pares)
+--Si la linea de producto no existe la crea, si ya existe asocia la categoria a ese LP existente, si la categoria ya existe tira error
+--y avisa que la categoria ya esta registrada y asociada a un LP existente (y te muestra a cual)
+
+--Intentemos ingresar una combinacion de linea de producto / categoria que ya existe
+exec catalogo.insertarLineaProductoYCategoria 'Almacen', 'Condimentos'
+
+--Intentamos ingresar una categoria que ya existe con una linea de productos que no existe
+exec catalogo.insertarLineaProductoYCategoria 'Ocultos', 'Condimentos'
+
+--Intentamos ingresar combinaciones vacias
+exec catalogo.insertarLineaProductoYCategoria ' ', NULL
+
+--Ingresamos una categoria nueva con una linea de productos existente
+exec catalogo.insertarLineaProductoYCategoria 'Almacen', 'Bolsas reciclables'
+--Vemos que este se asocia correctamente con la linea de productos
+select * from catalogo.Categoria c
+inner join catalogo.LineaProducto lp
+on c.idLineaProd=lp.id
+where c.categoria='Bolsas_reciclables'
+
+--borramos el registro
+delete from catalogo.Categoria
+where categoria='Bolsas_reciclables'
+
+--Ingresamos una categoria nueva con una linea de productos nueva
+exec catalogo.insertarLineaProductoYCategoria 'Ocultos', 'Magicos'
+
+--Vemos que se creo tanto la linea de productos como la categoria y se asociaron correctamente
+select * from catalogo.Categoria c
+inner join catalogo.LineaProducto lp
+on c.idLineaProd=lp.id
+where c.categoria='Magicos'
+
+--borramos ambos registros
+delete from catalogo.Categoria
+where categoria='Magicos'
+
+delete from catalogo.LineaProducto 
+where lineaProd='Ocultos'
+
+--SP para insertar una linea de producto (sola, sin categoria)
+--Intentamos insertar una linea de producto nula
+exec catalogo.insertarLineaProducto ' '
+--o
+exec catalogo.insertarLineaProducto NULL
+
+--Intentamos ingresar una linea de producto existente
+exec catalogo.insertarLineaProducto 'Almacen'
+
+--Ingresamos una linea de producto totalmente nueva
+exec catalogo.insertarLineaProducto 'Ocultos'
+
+--vemos que se ingreso
+select * from catalogo.LineaProducto
+where lineaProd='Ocultos'
+
+--borramos el registro
+delete from catalogo.LineaProducto
+where lineaProd='Ocultos'

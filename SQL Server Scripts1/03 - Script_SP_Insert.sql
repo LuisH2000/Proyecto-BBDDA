@@ -74,7 +74,7 @@ begin
 	insert into sucursales.Sucursal(ciudad, direccion, horario, telefono)
 	values(@ciudadTrim, @dirTrim, @horarioTrim, @telefono)
 end
-select * from sucursales.sucursal
+go
 --EMPLEADO
 --SP para ingresar empleado en una sucursal donde la sucursal se determina por ciudad y direccion de la misma
 create or alter procedure recursosHumanos.insertarEmpleadoSucursalPorCiudadDireccion
@@ -155,7 +155,7 @@ begin
 	insert into recursosHumanos.Empleado (legajo,nombre,apellido,dni,direccion,emailPer,emailEmp,cuil,cargo,idSucursal,turno,activo)
 	values(@legajo,@nombre,@apellido,@dni,RTRIM(ltrim(@direccionEmp)),@emailPer,@emailEmp,@cuil,@idCargo,@idSuc,@turno,1)
 end
-
+go
 --SP para ingresar empleado en una sucursal donde la sucursal se determina por ID
 create or alter procedure recursosHumanos.insertarEmpleadoSucursalPorId
 @legajo int,
@@ -230,9 +230,108 @@ begin
 	insert into recursosHumanos.Empleado (legajo,nombre,apellido,dni,direccion,emailPer,emailEmp,cuil,cargo,idSucursal,turno,activo)
 	values(@legajo,@nombre,@apellido,@dni,RTRIM(ltrim(@direccionEmp)),@emailPer,@emailEmp,@cuil,@idCargo,@idSucursal,@turno,1)
 end
-select * from recursosHumanos.Empleado
-select * from recursosHumanos.cargo
-select * from sucursales.Sucursal
+go
+
+--SP para insertar un cargo
+create or alter procedure recursosHumanos.insertarCargo
+@nombreCargo varchar(20)
+as
+begin
+	--Quitamos espacios al inicio y al final, primera letra mayuscula y el resto todo minuscula
+	SET @nombreCargo = UPPER(LEFT(LTRIM(RTRIM(@nombreCargo)), 1)) + LOWER(SUBSTRING(LTRIM(RTRIM(@nombreCargo)), 2, LEN(@nombreCargo) - 1))
+	--Validacion de que no sea nulo ni vacio
+	if @nombreCargo is null or @nombreCargo=''
+	begin
+		raiserror('No se ingreso un nombre de cargo',16,1)
+		return
+	end
+	--Validacion de cargo unico
+	if(select 1 from recursosHumanos.Cargo where cargo=@nombreCargo) is not null
+	begin
+		raiserror('El cargo ingresado ya existe.',16,1)
+		return
+	end
+	--insercion
+	insert into recursosHumanos.Cargo (cargo)
+	values(@nombreCargo)
+end
+go
+--SP para insertar una linea de Producto junto con su categoria (tal como venian en el archivo, de a pares)
+--Si la linea de producto no existe la crea, si ya existe asocia la categoria a ese LP existente, si la categoria ya existe tira error
+--y avisa que la categoria ya esta registrada y asociada a un LP existente
+create or alter procedure catalogo.insertarLineaProductoYCategoria
+@lineaProd varchar(10),
+@categoria varchar(50)
+as
+begin
+	declare @error varchar(max)=''
+	declare @resuValLP bit
+	declare @LPError varchar(10)
+	declare @idLP int
+	declare @resuValC bit
+	declare @resuValComb bit
+	set @lineaProd=replace(RTRIM(ltrim(@lineaProd)),' ','_')
+	set @categoria=replace(RTRIM(ltrim(@categoria)),' ','_')
+	--Validamos que ambos campos no esten vacios
+	if @lineaProd is null or @lineaProd=''
+		set @error=@error+'No se ingreso una linea de producto.'+CHAR(13)+CHAR(10)
+	if @categoria is null or @categoria=''
+		set @error=@error+'No se ingreso una categoria.'+CHAR(13)+CHAR(10)
+	--Validamos que no existan ambos campos ya en alguna de las tablas
+	set @resuValLP=(select 1 from catalogo.LineaProducto where lineaProd=@lineaProd)
+	set @resuValC=(select 1 from catalogo.Categoria where categoria=@categoria)
+	set @resuValComb=(select 1 from catalogo.Categoria c inner join catalogo.LineaProducto lp on c.idLineaProd=lp.id where categoria=@categoria and lineaProd=@lineaProd)
+	if @resuValComb is not null
+	begin
+		set @error=@error+'La combinacion linea de producto con categoria ingresada ya esta registrada.'+CHAR(13)+CHAR(10)
+	end
+	else if @resuValC is not null
+	begin
+		set @LPError=(select lp.lineaProd from catalogo.LineaProducto lp
+						inner join catalogo.Categoria c
+							on lp.id=c.idLineaProd
+						where c.categoria=@categoria)
+		set @error=@error+'La categoria de producto ingresada ya esta registrada y asociada con la linea de productos: '+@LPError+'.'+CHAR(13)+CHAR(10)
+	end
+	if @error <> ''
+	begin
+		raiserror(@error,16,1)
+		return
+	end
+	--Habiendo validado insertamos la combinacion
+	if @resuValLP is null --insertamos la linea de producto solo si este no existia previamente
+	begin
+		insert into catalogo.LineaProducto(lineaProd)
+		values (@lineaProd)
+	end
+	set @idLP=(select id from catalogo.LineaProducto where lineaProd=@lineaProd) --obtenemos el id de la LP 
+	insert into catalogo.Categoria (categoria,idLineaProd) --ingresamos la categoria
+	values(@categoria,@idLP)
+end
+
+--SP para insertar una linea de producto (sola, sin categoria)
+create or alter procedure catalogo.insertarLineaProducto
+@lineaProd varchar(10)
+as
+begin
+	set @lineaProd=RTRIM(ltrim(@lineaProd))
+	--Verificamos que no sea null ni vacio
+	if @lineaProd is null or @lineaProd=''
+	begin
+		raiserror('No se ingreso una linea de producto o esta vacia',16,1)
+		return
+	end
+	--verificamos que no exista ya
+	if (select 1 from catalogo.LineaProducto where lineaProd=@lineaProd) is not null
+	begin
+		raiserror('La linea de producto ingresada ya esta registrada.',16,1)
+		return
+	end
+	--insertamos
+	insert into catalogo.LineaProducto (lineaProd)
+	values(@lineaProd)
+end
+
 --EMPLEADO
 --CARGO
 --LINEAPRODUCTO
