@@ -408,6 +408,216 @@ begin
 	values(@idCat,@idProductoTab)
 end
 go
+--SP para insertar un tipo de cliente nuevo
+create or alter procedure clientes.insertarTipoCliente
+@tipo char(6)
+as
+begin
+	set @tipo=LTRIM(rtrim(@tipo))
+	--Verificamos que no sea nulo
+	if @tipo is null or @tipo=''
+	begin
+		raiserror('No se inserto un tipo de cliente.',16,1)
+		return
+	end
+	--Verificamos que no exista ya
+	if exists (select 1 from clientes.TipoCliente where tipo=@tipo)
+	begin
+		raiserror('El tipo de cliente que se intento ingresar ya existe.',16,1)
+		return
+	end
+	--insertamos
+	insert into clientes.TipoCliente (tipo)
+	values(@tipo)
+end
+--SP Para insertar un nuevo medio de pago (nota: estaria bueno usar una api de traduccion aca, si me da el tiempo despues voy a intentar incorporar eso).
+create or alter procedure comprobantes.insertarMedioDePago
+@medioDePagoIng varchar(11), --no puede ser null
+@medioDePagoEsp varchar(22)  --no puede ser null
+as
+begin
+	declare @error varchar(max)=''
+	set @medioDePagoIng=LTRIM(rtrim(@medioDePagoIng))
+	set @medioDePagoEsp=LTRIM(rtrim(@medioDePagoEsp))
+	--verificamos que no sean nulos ni vacios
+	if @medioDePagoIng is null or @medioDePagoIng=''
+		set @error=@error+'No se ingreso el nombre del medio de pago en ingles.'+CHAR(13)+CHAR(10)
+	if @medioDePagoEsp is null or @medioDePagoEsp=''
+		set @error=@error+'No se ingreso el nombre del medio de pago en español.'+CHAR(13)+CHAR(10)
+	--verificamos que no existan ya
+	if exists (select 1 from comprobantes.MedioDePago where nombreEsp=@medioDePagoEsp)
+		set @error=@error+'El medio de pago en español ingresado ya esta registrado, este debe ser unico'+CHAR(13)+CHAR(10)
+	if exists (select 1 from comprobantes.MedioDePago where nombreIng=@medioDePagoIng)
+		set @error=@error+'El medio de pago en ingles ingresado ya esta registrado, este debe ser unico'+CHAR(13)+CHAR(10)
+	--verificamos errores
+	if @error<>''
+	begin
+		raiserror(@error,16,1)
+		return
+	end
+	--insertamos medioDePago
+	insert into comprobantes.MedioDePago (nombreIng,nombreEsp)
+	values(@medioDePagoIng,@medioDePagoEsp)
+end
+go
+--SP para insertar una factura (venta)
+CREATE TYPE tablaProductosIdCant AS TABLE (
+    idProd int,
+	cantidad int
+);
+go --Este tipo de dato es necesario para poder pasarle multiples productos al sp
+create or alter procedure ventas.insertarFactura 
+@idFactura char(11), --no null, unico
+@tipoFactura char(1), --no null, debe ser A B o C
+@empleadoLeg int, --no null, debe existir
+@ciudadCliente varchar(20), --puede ser null, si viene vacio se reemplaza por null
+@genero char(6), --no puede ser null, debe ser male o female
+@tipoCliente char(6), --no null
+@estado char(6), --puede venir null, si viene null se lo reemplaza por impaga
+@prodsId tablaProductosIdCant READONLY, --debe venir con al menos 1 registro valido con cantidades validas
+@medioDePago varchar(22), --puede ser nulo si el estado es impaga, sino no debe ser nulo
+@idPago char(23) -- no debe ser nulo si el estado es pagado aunque si esta pagado con cash debe tomar valor '--', si el  estado es null este debe ser '--'.
+as
+begin
+	declare @error varchar(max)=''
+	declare @idTipoCliente int
+	declare @medioDePagoNullFlag bit=0
+	declare @idProductosConf table
+	(idProd int,
+	cant int,
+	precio decimal(9,2),
+	precioUsd decimal(9,2))
+	declare @idRealFactura int
+	declare @idMedioPago int
+	--normalizamos los datos de entrada
+	set @idFactura=RTRIM(ltrim(@idFactura))
+	set @ciudadCliente=RTRIM(ltrim(@ciudadCliente))
+	set @genero=RTRIM(ltrim(@genero))
+	set @tipoCliente=RTRIM(ltrim(@tipoCliente))
+	set @estado=RTRIM(ltrim(@estado))
+	set @tipoFactura=UPPER(@tipoFactura)
+	set @medioDePago=RTRIM(ltrim(@medioDePago))
+	set @idPago=rtrim(ltrim(@idPago))
+	--verificamos campos que no pueden ser nulos
+	if @idFactura is null or @idFactura=''
+		set @error=@error+'No se ingreso un id de factura.'+CHAR(13)+CHAR(10)
+	if @tipoFactura is null or @tipoFactura=''
+		set @error=@error+'No se ingreso un tipo de factura.'+CHAR(13)+CHAR(10)
+	if @empleadoLeg is null
+		set @error=@error+'No se ingreso un legajo para indicar el empleado que realizo la venta.'+CHAR(13)+CHAR(10)
+	if @tipoCliente is null or @tipoCliente=''
+		set @error=@error+'No se ingreso un tipo de cliente.'+CHAR(13)+CHAR(10)
+	if (@medioDePago is null or @medioDePago='') and @estado='Pagada'
+	begin
+		set @error=@error+'No se ingreso un medio de pago.'+char(13)+char(10)
+		set @medioDePagoNullFlag=1
+	end
+	if @genero is null or @genero=''
+		set @error=@error+'No se ingreso un genero para el cliente, este debe ser male o female.'+char(13)+char(10)
+	--seteamos aquellos campos que vienen vacios en null
+	if @estado=''
+		set @estado=null
+	if @ciudadCliente=''
+		set @ciudadCliente=null
+	if @idPago='' or @idPago is null
+		set @idPago='--' --para idPago el null se marca como '--'
+	if @estado is null
+		set @estado='Impaga'
+	--verificaciones generales
+	--verificamos que si el estado es nulo o impaga el id de pago sea nulo tambien, que el  estado sea alguno de los 3 validos y que no sea duplicado el id de pago
+	if @estado not in ('Impaga','Pagada')
+		set @error=@error+'El estado de pago debe ser Impaga, Pagada o null.'+char(13)+char(10)
+	else
+	begin
+		if @estado='Pagada'
+		begin
+			if @medioDePago not in ('Efectivo','Cash')
+			begin
+				if exists(select 1 from comprobantes.comprobante where idPago=@idPago) and @medioDePagoNullFlag=0
+					set @error=@error+'El id de pago ingresado ya tiene un comprobante asociado'+char(13)+char(10)
+			end
+			else
+				set @idPago='--'
+		end
+	end
+	--verificamos que el medio de pago existe
+	set @idMedioPago=(select id from comprobantes.MedioDePago where nombreEsp=@medioDePago or nombreIng=@medioDePago)
+	if @idMedioPago is null and @medioDePagoNullFlag=0
+		set @error=@error+'El medio de pago ingresado no esta registrado, insertelo usando comprobantes.insertarMedioDePago y luego cargue la factura'+char(13)+char(10)
+	--Pasamos a una tabla variable aquellos productos que si existen en catalogo.producto
+	insert into @idProductosConf
+	select pid.idProd, pid.cantidad, p.precio,p.precioUSD from @prodsId pid
+	left join catalogo.Producto p
+	on pid.idProd=p.id
+	where p.id is not null
+	and pid.cantidad>0
+	and p.activo=1
+	--verificamos que la tabla de productos confirmados tenga al menos un producto cargado
+	if(select COUNT(1) from @idProductosConf)=0
+		set @error=@error+'No se ingresaron productos en la tabla de productos o todos los ingresados no existian o no tenian cantidades validas.'+CHAR(13)+CHAR(10)
+	--verificamos que el idFactura tenga el formato correcto y que no este registrado ya
+	--verificamos que el idFactura no este duplicado
+	if @idFactura not like ('[0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9][0-9][0-9]')
+		set @error=@error+'El formato de la factura es incorrecto, debe ser xxx-xx-xxxx.'+CHAR(13)+CHAR(10)
+	else if exists(select 1 from ventas.Factura where idFactura=@idFactura)
+		set @error=@error+'El id de factura ingresado ya se encuentra registrado.'+char(13)+char(10)
+	--verificamos que el tipo de factura sea correcto
+	if @tipoFactura not in ('A','B','C')
+		set @error=@error+'El tipo de factura debe ser A, B o C'+CHAR(13)+CHAR(10)
+	--verificamos que el empleado exista
+	if not exists (select 1 from recursosHumanos.Empleado where legajo=@empleadoLeg)
+		set @error=@error+'El empleado ingresado no existe, inserte ese empleado usando recursosHumanos.insertarEmpleadoSucursalPorCiudadDireccion y luego cargue la factura.'+CHAR(13)+CHAR(10)
+	--verificamos que el tipo de cliente ingresado exista
+	set @idTipoCliente=(select id from clientes.TipoCliente where tipo=@tipoCliente)
+	if @idTipoCliente is null
+		set @error=@error+'El tipo de cliente ingresado no existe, inserte este tipo de cliente usando clientes.insertarTipoCliente y luego cargue la factura.'+CHAR(13)+CHAR(10)
+	--verificamos que el genero del cliente sea male o female
+	if @genero not in ('male','female')
+		set @error=@error+'El genero del cliente debe ser male o female.'+char(13)+char(10)
+	if @error<>''
+	begin
+		raiserror(@error,16,1)
+		return
+	end
+	--Preprocesamos la tabla de productos confirmados, especificamente usamos el sp para convertir usd a pesos y a aquellos productos que no tengan
+	--precio en pesos le asignamos un precio usando su precio en dolares
+	declare @cantUsdProd int
+	declare @precioDolarPeso decimal(9,2)
+	set @cantUsdProd=(select count(1) from @idProductosConf where precioUsd is not null)
+	if(@cantUsdProd>0)
+	begin
+		exec ventas.obtenerPrecioDolar @precioDolarPeso output;
+		select @precioDolarPeso as precioDolarUsado
+		if(@precioDolarPeso is null)
+		begin
+			raiserror('Los productos que se intentaron comprar contenian algunos precios en dolares, la API de conversion de moneda no respondio la solicitud, intente mas tarde.',16,1)
+			return
+		end
+		update @idProductosConf
+		set precio=precioUsd*@precioDolarPeso
+		where precio is null
+	end
+	--Una vez pasadas todas las verificaciones insertamos
+	insert into ventas.factura (idFactura, tipoFactura,fecha,hora,empleadoLeg,ciudadCliente,genero,idTipoCliente,estado)
+	values(@idFactura,@tipoFactura,cast(getdate() as date), cast(getdate() as time),@empleadoLeg,@ciudadCliente,@genero,@idTipoCliente,@estado);
+	--capturamos el id real autogenerado de la factura
+	set @idRealFactura=(select id from ventas.factura where idFactura=@idFactura)
+	--creamos las lineas de factura asociadas
+	insert into ventas.LineaDeFactura (idFactura,idProd,precioUn,cantidad,subtotal)
+	select @idRealFactura,pf.idProd, pf.precio, pf.cant, pf.precio*pf.cant
+	from @idProductosConf pf
+	--solo si el estado era pagado ingresamos un comprobante asociando los datos correspondientes
+	if(@estado='Pagada')
+	begin
+		insert into comprobantes.comprobante (tipoComprobante,idPago,idMedPago,idFactura)
+		values('Factura',@idPago,@idMedioPago,@idRealFactura)
+	end
+	else
+		print('Nota: no se genero un comprobante para la factura ya que el mismo no se encuentra pagado, cuando se pague use el sp correspondiente para generarlo')
+end
+go
+
+
 --EMPLEADO
 --CARGO
 --LINEAPRODUCTO

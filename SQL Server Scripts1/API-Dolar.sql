@@ -1,4 +1,5 @@
-create or alter proc obtenerPrecioDolar @precio decimal(6,2) output
+--Nico: le agregue un esquema al sp
+create or alter proc ventas.obtenerPrecioDolar @precio decimal(6,2) output
 as 
 begin
 	EXEC sp_configure 'show advanced options', 1;	--Este es para poder editar los permisos avanzados.
@@ -35,5 +36,5 @@ begin
 end
 
 declare @pre decimal(6,2)
-exec obtenerPrecioDolar @precio = @pre output
+exec obtenerPrecioDolar @pre output
 PRINT 'El precio del dolar es: ' + CAST(@pre AS NVARCHAR(10));

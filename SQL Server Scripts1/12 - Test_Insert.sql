@@ -163,13 +163,101 @@ on lp.id=c.idLineaProd
 where p.nombre='fruta del dragon'
 
 --borramos los registros
-
 declare @idProd int
 set @idProd=(select id from catalogo.Producto where nombre='fruta del dragon')
 delete from catalogo.PerteneceA
 where idProd=@idProd
 
-
 delete from catalogo.producto
 where nombre='fruta del dragon'
+
+--SP para insertar un tipo de cliente nuevo
+--intentamos insertar un null
+exec clientes.insertarTipoCliente null
+--Ahora uno vacio
+exec clientes.insertarTipoCliente '    '
+--Ahora uno valido
+exec clientes.insertarTipoCliente 'Pro'
+--vemos que se inserto
+select * from clientes.TipoCliente
+--borramos el registro
+delete from clientes.TipoCliente
+where tipo='Pro'
+
+--SP Para insertar un nuevo medio de pago
+--intentamos ingresar un medio de pago existente
+exec comprobantes.insertarMedioDePago 'Credit card', 'Tarjeta de credito'
+--intentamos ingresar un medio de pago nulo
+exec comprobantes.insertarMedioDePago null, null
+--ahora uno vacio
+exec comprobantes.insertarMedioDePago '   ', '    '
+
+--ahora uno valido
+exec comprobantes.insertarMedioDePago 'Debit card', 'Tarjeta de debito'
+
+--vemos que se inserto
+select * from comprobantes.MedioDePago
+
+--borramos el registro
+delete from comprobantes.MedioDePago
+where nombreEsp='Tarjeta de debito'
+
+--SP para insertar una factura (venta) (nota: seguro algun error tenga en cuanto a validaciones porque me maree entre tantas...habria que testearlo mas)
+--intentamos insertar una factura que ya existe, junto con un tipo de factura inexistente, medio de pago inexistente... es decir, muchos datos erroneos 
+declare @tablaProds tablaProductosIdCant
+insert into @tablaProds
+values(1,-2),(2,-2)
+exec ventas.insertarFactura '750-67-8428','K',28,NULL,NULL,1,'Pagada',@tablaProds,NULL,NULL
+
+--Nota: hay que agregar mas casos de prueba, pero ya es tarde asi que voy a probar que sirve en el caso valido
+declare @tablaProds tablaProductosIdCant
+insert into @tablaProds
+values(1,2),(2,2)
+exec ventas.insertarFactura '980-23-2932','A',257020,'San Justo','Female','Normal','Pagada',@tablaProds,'Efectivo','--'
+--vemos que efectivamente se inserto
+select * from ventas.factura
+where idFactura='980-23-2932'
+--vemos las lineas de factura
+select lf.id,lf.idFactura,lf.idProd,p.nombre,p.precio,p.precioUSD,lf.cantidad,lf.subtotal from ventas.LineaDeFactura lf
+inner join ventas.factura f
+on lf.idFactura=f.id
+inner join catalogo.producto p
+on p.id=lf.idProd
+where f.idFactura='980-23-2932'
+--vemos el comprobante
+select * from comprobantes.comprobante c
+inner join ventas.factura f
+on c.idFactura=f.id
+inner join comprobantes.MedioDePago mp
+on c.idMedPago=mp.id
+where f.idFactura='980-23-2932'
+
+--Probemos un caso valido pero donde se compra un producto tecnologico a ver si la api funciona y todo eso.
+declare @tablaProds tablaProductosIdCant
+insert into @tablaProds
+values(6436,1)
+exec ventas.insertarFactura '239-12-1291','A',257020,'San Justo','Female','Normal','Pagada',@tablaProds,'Efectivo','--'
+
+--vemos las lineas de factura
+select lf.id,lf.idFactura,lf.idProd,p.nombre,lf.precioUn,p.precioUSD,lf.cantidad,lf.subtotal from ventas.LineaDeFactura lf
+inner join ventas.factura f
+on lf.idFactura=f.id
+inner join catalogo.producto p
+on p.id=lf.idProd
+where f.idFactura='239-12-1291'
+--son estos productos tec:
+select * from catalogo.producto
+where id=6436
+--vemos el comprobante
+select * from comprobantes.comprobante c
+inner join ventas.factura f
+on c.idFactura=f.id
+inner join comprobantes.MedioDePago mp
+on c.idMedPago=mp.id
+where f.idFactura='239-12-1291'
+
+--Notas adicionales
+--Se da un overflow con la gran mayoria de productos tecnologicos, sugiero aumentar el decimal que usamos a (15,2) en linea de producto
+--precio unitario y subtotal. Cuando no se da este overflow al parecer funciona sin problema, pero como digo, hay que testearlo mas.
+
 
