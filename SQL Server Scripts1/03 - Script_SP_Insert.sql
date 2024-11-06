@@ -495,20 +495,18 @@ create or alter procedure ventas.insertarFactura
 @ciudadCliente varchar(20), --puede ser null, si viene vacio se reemplaza por null
 @genero char(6), --no puede ser null, debe ser male o female
 @tipoCliente char(6), --no null
-@estado char(6), --puede venir null, si viene null se lo reemplaza por impaga
-@prodsId tablaProductosIdCant READONLY, --debe venir con al menos 1 registro valido con cantidades validas
-@medioDePago varchar(22), --puede ser nulo si el estado es impaga, sino no debe ser nulo
-@idPago char(23) -- no debe ser nulo si el estado es pagado aunque si esta pagado con cash debe tomar valor '--', si el  estado es null este debe ser '--'.
+@prodsId tablaProductosIdCant READONLY --debe venir con al menos 1 registro valido con cantidades validas
 as
 begin
 	declare @error varchar(max)=''
 	declare @idTipoCliente int
-	declare @medioDePagoNullFlag bit=0
 	declare @idProductosConf table
-	(idProd int,
+	(
+	idProd int,
 	cant int,
 	precio decimal(9,2),
-	precioUsd decimal(9,2))
+	precioUsd decimal(9,2)
+	)
 	declare @idRealFactura int
 	declare @idMedioPago int
 	--normalizamos los datos de entrada
@@ -516,10 +514,7 @@ begin
 	set @ciudadCliente=RTRIM(ltrim(@ciudadCliente))
 	set @genero=RTRIM(ltrim(@genero))
 	set @tipoCliente=RTRIM(ltrim(@tipoCliente))
-	set @estado=RTRIM(ltrim(@estado))
 	set @tipoFactura=UPPER(@tipoFactura)
-	set @medioDePago=RTRIM(ltrim(@medioDePago))
-	set @idPago=rtrim(ltrim(@idPago))
 	--verificamos campos que no pueden ser nulos
 	if @idFactura is null or @idFactura=''
 		set @error=@error+'No se ingreso un id de factura.'+CHAR(13)+CHAR(10)
@@ -529,43 +524,12 @@ begin
 		set @error=@error+'No se ingreso un legajo para indicar el empleado que realizo la venta.'+CHAR(13)+CHAR(10)
 	if @tipoCliente is null or @tipoCliente=''
 		set @error=@error+'No se ingreso un tipo de cliente.'+CHAR(13)+CHAR(10)
-	if (@medioDePago is null or @medioDePago='') and @estado='Pagada'
-	begin
-		set @error=@error+'No se ingreso un medio de pago.'+char(13)+char(10)
-		set @medioDePagoNullFlag=1
-	end
 	if @genero is null or @genero=''
 		set @error=@error+'No se ingreso un genero para el cliente, este debe ser male o female.'+char(13)+char(10)
 	--seteamos aquellos campos que vienen vacios en null
-	if @estado=''
-		set @estado=null
 	if @ciudadCliente=''
 		set @ciudadCliente=null
-	if @idPago='' or @idPago is null
-		set @idPago='--' --para idPago el null se marca como '--'
-	if @estado is null
-		set @estado='Impaga'
 	--verificaciones generales
-	--verificamos que si el estado es nulo o impaga el id de pago sea nulo tambien, que el  estado sea alguno de los 3 validos y que no sea duplicado el id de pago
-	if @estado not in ('Impaga','Pagada')
-		set @error=@error+'El estado de pago debe ser Impaga, Pagada o null.'+char(13)+char(10)
-	else
-	begin
-		if @estado='Pagada'
-		begin
-			if @medioDePago not in ('Efectivo','Cash')
-			begin
-				if exists(select 1 from comprobantes.comprobante where idPago=@idPago) and @medioDePagoNullFlag=0
-					set @error=@error+'El id de pago ingresado ya tiene un comprobante asociado'+char(13)+char(10)
-			end
-			else
-				set @idPago='--'
-		end
-	end
-	--verificamos que el medio de pago existe
-	set @idMedioPago=(select id from comprobantes.MedioDePago where nombreEsp=@medioDePago or nombreIng=@medioDePago)
-	if @idMedioPago is null and @medioDePagoNullFlag=0
-		set @error=@error+'El medio de pago ingresado no esta registrado, insertelo usando comprobantes.insertarMedioDePago y luego cargue la factura'+char(13)+char(10)
 	--Pasamos a una tabla variable aquellos productos que si existen en catalogo.producto
 	insert into @idProductosConf
 	select pid.idProd, pid.cantidad, p.precio,p.precioUSD from @prodsId pid
@@ -575,8 +539,8 @@ begin
 	and pid.cantidad>0
 	and p.activo=1
 	--verificamos que la tabla de productos confirmados tenga al menos un producto cargado
-	if(select COUNT(1) from @idProductosConf)=0
-		set @error=@error+'No se ingresaron productos en la tabla de productos o todos los ingresados no existian o no tenian cantidades validas.'+CHAR(13)+CHAR(10)
+	if (select COUNT(1) from @idProductosConf)<>(select COUNT(1) from @prodsId)
+		set @error=@error+'Se ingresaron productos que no existen o cantidades negativas.'+CHAR(13)+CHAR(10)
 	--verificamos que el idFactura tenga el formato correcto y que no este registrado ya
 	--verificamos que el idFactura no este duplicado
 	if @idFactura not like ('[0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9][0-9][0-9]')
@@ -620,14 +584,115 @@ begin
 		where precio is null
 	end
 	--Una vez pasadas todas las verificaciones insertamos
-	insert into ventas.factura (idFactura, tipoFactura,fecha,hora,empleadoLeg,ciudadCliente,genero,idTipoCliente,estado)
-	values(@idFactura,@tipoFactura,cast(getdate() as date), cast(getdate() as time),@empleadoLeg,@ciudadCliente,@genero,@idTipoCliente,@estado);
+	insert into ventas.factura (idFactura, tipoFactura,fecha,hora,empleadoLeg,ciudadCliente,genero,idTipoCliente)
+	values(@idFactura,@tipoFactura,cast(getdate() as date), cast(getdate() as time),@empleadoLeg,@ciudadCliente,@genero,@idTipoCliente);
 	--capturamos el id real autogenerado de la factura
 	set @idRealFactura=(select id from ventas.factura where idFactura=@idFactura)
 	--creamos las lineas de factura asociadas
 	insert into ventas.LineaDeFactura (idFactura,idProd,precioUn,cantidad,subtotal)
 	select @idRealFactura,pf.idProd, pf.precio, pf.cant, pf.precio*pf.cant
 	from @idProductosConf pf
+end
+go
+
+create or alter proc comprobantes.insertarComprobante
+	@idPago char(23),
+	@mp int,
+	@factura char(11)
+as
+begin
+	declare @error varchar(max) = ''
+	declare @idFactura int
+	set @idPago = ltrim(rtrim(@idPago))
+	set @factura = ltrim(rtrim(@factura))
+	--verificamos que el id de pago no este vacio
+	if @idPago is null or @idPago = ''
+		set @error = @error + 'No se ingreso el id de pago' +CHAR(13)+CHAR(10)
+	--verificamos que el medio de pago ingresado exista
+	if not exists (select 1 from comprobantes.MedioDePago where id = @mp)
+	begin
+		set @error = @error + 'El medio de pago ingresado no existe' +CHAR(13)+CHAR(10)
+	end
+	--verificamos que la factura no este vacia, cumpla con el formato y que exista
+	if @factura is null or @factura=''
+		set @error=@error+'No se ingreso un id de factura.'+CHAR(13)+CHAR(10)
+	if @factura not like ('[0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9][0-9][0-9]')
+		set @error=@error+'El formato de la factura es incorrecto, debe ser xxx-xx-xxxx.'+CHAR(13)+CHAR(10)
+	if not exists (select 1 from ventas.Factura where idFactura = @factura)
+		set @error=@error+'La factura ingresada no existe'+CHAR(13)+CHAR(10)
+	--verificamos que el id de pago no exista en caso que el medio de pago no sea cash
+	--si es cash, no tiene idPago
+	if (select id from comprobantes.MedioDePago where nombreIng = 'Cash') <> @mp
+	begin
+		if exists (select 1 from comprobantes.Comprobante where idPago = @idPago)
+		begin
+			set @error=@error+'El id de pago ya existe'+CHAR(13)+CHAR(10)
+		end
+	end
+	else
+		set @idPago = '--'
+	--verificamos que la factura no tenga un comprobante asociado ya
+	set @idFactura = (select id from ventas.Factura where idFactura = @factura)
+	if exists (select 1 from comprobantes.Comprobante where idFactura = @idFactura and tipoComprobante = 'Factura')
+		set @error=@error+'La factura ingresada ya tiene un comprobante'+CHAR(13)+CHAR(10)
+
+	if @error <> ''
+	begin
+		raiserror(@error, 16, 1)
+		return
+	end
+
+	update ventas.Factura
+	set estado = 'Pagada'
+	where id = @idFactura
+	
+	insert into comprobantes.Comprobante(tipoComprobante, idPago, idMedPago, idFactura)
+		values('Factura', @idPago, @mp, @idFactura)
+end
+/*
+@estado char(6), --puede venir null, si viene null se lo reemplaza por impaga
+@medioDePago varchar(22), --puede ser nulo si el estado es impaga, sino no debe ser nulo
+@idPago char(23) -- no debe ser nulo si el estado es pagado aunque si esta pagado con cash debe tomar valor '--', si el  estado es null este debe ser '--'.
+
+set @estado=RTRIM(ltrim(@estado))
+set @medioDePago=RTRIM(ltrim(@medioDePago))
+	set @idPago=rtrim(ltrim(@idPago))
+
+if (@medioDePago is null or @medioDePago='') and @estado='Pagada'
+	begin
+		set @error=@error+'No se ingreso un medio de pago.'+char(13)+char(10)
+		set @medioDePagoNullFlag=1
+	end
+
+if @estado=''
+		set @estado=null
+if @idPago='' or @idPago is null
+		set @idPago='--' --para idPago el null se marca como '--'
+	if @estado is null
+		set @estado='Impaga'
+
+--verificamos que si el estado es nulo o impaga el id de pago sea nulo tambien, que el  estado sea alguno de los 3 validos y que no sea duplicado el id de pago
+	if @estado not in ('Impaga','Pagada')
+		set @error=@error+'El estado de pago debe ser Impaga, Pagada o null.'+char(13)+char(10)
+	else
+	begin
+		if @estado='Pagada'
+		begin
+			if @medioDePago not in ('Efectivo','Cash')
+			begin
+				if exists(select 1 from comprobantes.comprobante where idPago=@idPago) and @medioDePagoNullFlag=0
+					set @error=@error+'El id de pago ingresado ya tiene un comprobante asociado'+char(13)+char(10)
+			end
+			else
+				set @idPago='--'
+		end
+	end
+
+--verificamos que el medio de pago existe
+set @idMedioPago=(select id from comprobantes.MedioDePago where nombreEsp=@medioDePago or nombreIng=@medioDePago)
+if @idMedioPago is null and @medioDePagoNullFlag=0
+	set @error=@error+'El medio de pago ingresado no esta registrado, insertelo usando comprobantes.insertarMedioDePago y luego cargue la factura'+char(13)+char(10)
+
 	--solo si el estado era pagado ingresamos un comprobante asociando los datos correspondientes
 	if(@estado='Pagada')
 	begin
@@ -636,10 +701,7 @@ begin
 	end
 	else
 		print('Nota: no se genero un comprobante para la factura ya que el mismo no se encuentra pagado, cuando se pague use el sp correspondiente para generarlo')
-end
-go
-
-
+		*/
 --EMPLEADO
 --CARGO
 --LINEAPRODUCTO

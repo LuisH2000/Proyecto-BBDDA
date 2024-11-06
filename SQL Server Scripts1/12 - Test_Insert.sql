@@ -211,17 +211,27 @@ where nombreEsp='Tarjeta de debito'
 
 ---***FACTURA***
 --SP para insertar una factura (venta) (nota: seguro algun error tenga en cuanto a validaciones porque me maree entre tantas...habria que testearlo mas)
---intentamos insertar una factura que ya existe, junto con un tipo de factura inexistente, medio de pago inexistente... es decir, muchos datos erroneos 
+--intentamos pasar solo parametros null
 declare @tablaProds tablaProductosIdCant
 insert into @tablaProds
-values(1,-2),(2,-2)
-exec ventas.insertarFactura '750-67-8428','K',28,NULL,NULL,1,'Pagada',@tablaProds,NULL,NULL
+values(1,2),(2,2)
+exec ventas.insertarFactura @idFactura = null,@tipoFactura = null,@empleadoLeg = null, @ciudadCliente = NULL, @genero = NULL, @tipoCliente = null, @prodsId = @tablaProds
+--intentamos insertar una factura que ya existe, junto con un tipo de factura inexistente, empleado inexsistente, genero invalido, tipo cliente inexistente
+declare @tablaProds tablaProductosIdCant
+insert into @tablaProds
+values(1,2),(2,2)
+exec ventas.insertarFactura @idFactura = '750-67-8428',@tipoFactura = 'K',@empleadoLeg = 28, @ciudadCliente = NULL, @genero = 'Other', @tipoCliente = 'VIP', @prodsId = @tablaProds
+--intentamos insertar productos que no existen
+declare @tablaProds tablaProductosIdCant
+insert into @tablaProds
+values(-1,2),(2,2)
+exec ventas.insertarFactura @idFactura = '980-23-2932',@tipoFactura = 'A',@empleadoLeg = 257020, @ciudadCliente = 'San Justo', @genero = 'Female', @tipoCliente = 'Normal', @prodsId = @tablaProds
 
 --Nota: hay que agregar mas casos de prueba, pero ya es tarde asi que voy a probar que sirve en el caso valido
 declare @tablaProds tablaProductosIdCant
 insert into @tablaProds
 values(1,2),(2,2)
-exec ventas.insertarFactura '980-23-2932','A',257020,'San Justo','Female','Normal','Pagada',@tablaProds,'Efectivo','--'
+exec ventas.insertarFactura @idFactura = '980-23-2932',@tipoFactura = 'A',@empleadoLeg = 257020, @ciudadCliente = 'San Justo', @genero = 'Female', @tipoCliente = 'Normal', @prodsId = @tablaProds
 --vemos que efectivamente se inserto
 select * from ventas.factura
 where idFactura='980-23-2932'
@@ -232,19 +242,12 @@ on lf.idFactura=f.id
 inner join catalogo.producto p
 on p.id=lf.idProd
 where f.idFactura='980-23-2932'
---vemos el comprobante
-select * from comprobantes.comprobante c
-inner join ventas.factura f
-on c.idFactura=f.id
-inner join comprobantes.MedioDePago mp
-on c.idMedPago=mp.id
-where f.idFactura='980-23-2932'
 
 --Probemos un caso valido pero donde se compra un producto tecnologico a ver si la api funciona y todo eso.
 declare @tablaProds tablaProductosIdCant
 insert into @tablaProds
 values(6436,1)
-exec ventas.insertarFactura '239-12-1291','A',257020,'San Justo','Female','Normal','Pagada',@tablaProds,'Efectivo','--'
+exec ventas.insertarFactura @idFactura = '239-12-1291',@tipoFactura = 'A',@empleadoLeg = 257020, @ciudadCliente = 'San Justo', @genero = 'Female', @tipoCliente = 'Normal', @prodsId = @tablaProds
 
 --vemos las lineas de factura
 select lf.id,lf.idFactura,lf.idProd,p.nombre,lf.precioUn,p.precioUSD,lf.cantidad,lf.subtotal from ventas.LineaDeFactura lf
@@ -256,16 +259,26 @@ where f.idFactura='239-12-1291'
 --son estos productos tec:
 select * from catalogo.producto
 where id=6436
---vemos el comprobante
-select * from comprobantes.comprobante c
-inner join ventas.factura f
-on c.idFactura=f.id
-inner join comprobantes.MedioDePago mp
-on c.idMedPago=mp.id
-where f.idFactura='239-12-1291'
 
---Notas adicionales
---Se da un overflow con la gran mayoria de productos tecnologicos, sugiero aumentar el decimal que usamos a (15,2) en linea de producto
---precio unitario y subtotal. Cuando no se da este overflow al parecer funciona sin problema, pero como digo, hay que testearlo mas.
-
-
+---***COMPROBANTE***
+--intentamos crear un comprobante con un id vacio, medio de pago invalido y factura vacia
+exec comprobantes.insertarComprobante '', 5, ''
+exec comprobantes.insertarComprobante null, null, null
+--intentamos crear un comprobante para una factura existente
+exec comprobantes.insertarComprobante '123', 1, '101-17-6199'
+--intentamos crear un comprobante con un id de pago existente
+exec comprobantes.insertarComprobante '4216-6054-2680-7126', 1, '239-12-1291'
+--insertamos un comprobante valido, cuando el pago es en efectivo el idPago pasa a ser --
+exec comprobantes.insertarComprobante '123', 1, '239-12-1291'
+exec comprobantes.insertarComprobante '456', 2, '980-23-2932'
+--vemos el comprobante y el estado de la factura
+select *
+from comprobantes.Comprobante c
+join ventas.Factura f on f.id = c.idFactura
+where idPago = '123' or f.idFactura = '980-23-2932'
+--borramos el comprobante y las facturas
+delete comprobantes.Comprobante where idFactura = 1002
+delete ventas.LineaDeFactura 
+	where idFactura in (select id from ventas.Factura 
+						where idFactura in ('239-12-1291', '980-23-2932' ))
+delete ventas.Factura where idFactura in ('239-12-1291', '980-23-2932')
