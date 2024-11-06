@@ -17,7 +17,7 @@ Los nombres de los store procedures NO deben comenzar con “SP”.
 
 use Com5600G13
 go
---SUCURSAL
+--***SUCURSAL***
 create or alter proc sucursales.insertarSucursal 
 	@ciudad varchar(20), 
 	@dir varchar(100), 
@@ -75,7 +75,7 @@ begin
 	values(@ciudadTrim, @dirTrim, @horarioTrim, @telefono)
 end
 go
---EMPLEADO
+--***EMPLEADO***
 --SP para ingresar empleado en una sucursal donde la sucursal se determina por ciudad y direccion de la misma
 create or alter procedure recursosHumanos.insertarEmpleadoSucursalPorCiudadDireccion
 @legajo int,
@@ -231,7 +231,7 @@ begin
 	values(@legajo,@nombre,@apellido,@dni,RTRIM(ltrim(@direccionEmp)),@emailPer,@emailEmp,@cuil,@idCargo,@idSucursal,@turno,1)
 end
 go
-
+--***CARGO***
 --SP para insertar un cargo
 create or alter procedure recursosHumanos.insertarCargo
 @nombreCargo varchar(20)
@@ -256,6 +256,8 @@ begin
 	values(@nombreCargo)
 end
 go
+
+---***CATEGORIA***
 --SP para insertar una linea de Producto junto con su categoria (tal como venian en el archivo, de a pares)
 --Si la linea de producto no existe la crea, si ya existe asocia la categoria a ese LP existente, si la categoria ya existe tira error
 --y avisa que la categoria ya esta registrada y asociada a un LP existente
@@ -308,7 +310,8 @@ begin
 	insert into catalogo.Categoria (categoria,idLineaProd) --ingresamos la categoria
 	values(@categoria,@idLP)
 end
-
+go
+---***LINEA DE PRODUCTO***
 --SP para insertar una linea de producto (sola, sin categoria)
 create or alter procedure catalogo.insertarLineaProducto
 @lineaProd varchar(10)
@@ -333,12 +336,15 @@ begin
 end
 go
 
+--***PRODUCTO***
 --SP Para ingresar un producto
 create or alter procedure catalogo.insertarProducto
 @idProd int, --puede ser null
 @nombre varchar(100), --no null
-@precio decimal(9,2), --no null y debe ser positivo
+@precio decimal(9,2), --puede ser null pero si esta debe ser positivo
 @precioUSD decimal(9,2), --puede ser null pero si esta debe ser positivo
+						-- precio y precioUSD no pueden ser null a la vez, si o si
+						-- debe tener uno
 @precioRef decimal(9,2), --puede ser null pero si esta debe ser positivo
 @unidadRef varchar(10), --puede ser null
 @proveedor varchar(50), --puede ser null
@@ -359,21 +365,24 @@ begin
 	begin
 		set @error=@error+'No se ingreso un nombre de producto.'+CHAR(13)+CHAR(10)
 	end
-	--verificacion de que precio no es nulo y ademas es positivo
-	if @precio is null
+	--verificacion de que hayan pasado algun precio y ademas sean positivo
+	if @precio is null and @precioUSD is null
 	begin
-		set @error=@error+'No se ingreso un precio para el producto.'+CHAR(13)+CHAR(10)
+		set @error=@error+'No se ingreso un precio para el producto. Ingresar el precio o precio en USD'+CHAR(13)+CHAR(10)
 	end
-	if @precio<0
+	if @precio is not null
 	begin
-		set @error=@error+'El precio del producto no puede ser negativo.'+CHAR(13)+CHAR(10)
+		if @precio<0
+		begin
+			set @error=@error+'El precio del producto no puede ser negativo.'+CHAR(13)+CHAR(10)
+		end
 	end
-	--verificacion de precioUsd y precioRef positivos de no ser nulos
 	if @precioUSD is not null
 	begin
 		if @precioUSD<0
 			set @error=@error+'El precio en USD del producto no puede ser negativo.'+CHAR(13)+CHAR(10)
 	end
+	--verificacion de precioRef positivo de no ser nulo
 	if @precioRef is not null
 	begin
 		if @precioRef<0
@@ -402,12 +411,17 @@ begin
 	insert into catalogo.Producto(idProd, nombre, precio, precioUSD, precioRef, unidadRef, fecha, proveedor, cantXUn, activo)
 	values(@idProd,@nombre,@precio,@precioUSD,@precioRef,@unidadRef,cast(GETDATE() as smalldatetime),@proveedor,@cantXUn,1);
 	--obtenemos el id del producto para cargarlo en perteneceA
-	set @idProductoTab=(select id from catalogo.Producto where nombre='fruta del dragon' and idProd is null and precio=3000)
+	if @precio is not null
+		set @idProductoTab=(select id from catalogo.Producto where nombre=@nombre and precio = @precio)
+	else
+		set @idProductoTab=(select id from catalogo.Producto where nombre=@nombre and precioUSD = @precioUSD)
 	--Lo cargamos a perteneceA para establecer la relacion
 	insert into catalogo.PerteneceA(idCategoria, idProd)
 	values(@idCat,@idProductoTab)
 end
 go
+
+--***TIPO CLIENTE***
 --SP para insertar un tipo de cliente nuevo
 create or alter procedure clientes.insertarTipoCliente
 @tipo char(6)
@@ -430,6 +444,9 @@ begin
 	insert into clientes.TipoCliente (tipo)
 	values(@tipo)
 end
+go
+
+--***MEDIO DE PAGO***
 --SP Para insertar un nuevo medio de pago (nota: estaria bueno usar una api de traduccion aca, si me da el tiempo despues voy a intentar incorporar eso).
 create or alter procedure comprobantes.insertarMedioDePago
 @medioDePagoIng varchar(11), --no puede ser null
@@ -460,11 +477,16 @@ begin
 	values(@medioDePagoIng,@medioDePagoEsp)
 end
 go
+
+--***FACTURA***
 --SP para insertar una factura (venta)
-CREATE TYPE tablaProductosIdCant AS TABLE (
-    idProd int,
-	cantidad int
-);
+if not exists (select * from sys.types where name = 'tablaProductosIdCant' and is_user_defined = 1)
+begin
+	CREATE TYPE tablaProductosIdCant AS TABLE (
+		idProd int,
+		cantidad int
+	);
+end
 go --Este tipo de dato es necesario para poder pasarle multiples productos al sp
 create or alter procedure ventas.insertarFactura 
 @idFactura char(11), --no null, unico

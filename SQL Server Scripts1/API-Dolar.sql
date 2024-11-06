@@ -1,4 +1,7 @@
 --Nico: le agregue un esquema al sp
+use Com5600G13
+go
+
 create or alter proc ventas.obtenerPrecioDolar @precio decimal(6,2) output
 as 
 begin
@@ -34,7 +37,3 @@ begin
 		[fecha] varchar(50) '$.fechaActualizacion'
 	);
 end
-
-declare @pre decimal(6,2)
-exec obtenerPrecioDolar @pre output
-PRINT 'El precio del dolar es: ' + CAST(@pre AS NVARCHAR(10));

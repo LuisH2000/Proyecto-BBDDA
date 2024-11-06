@@ -132,7 +132,7 @@ begin
 		proveedor varchar(50),
 		cantXUn varchar(20),
 		activo int default 1,
-		constraint unique_producto unique(idProd, nombre, precio)
+		constraint unique_producto unique(idProd, nombre, precio, precioUSD)
 	)
 end
 
@@ -233,9 +233,9 @@ begin
 		id int identity(1,1) primary key,
 		idFactura int,
 		idProd int,
-		precioUn decimal(6,2),
+		precioUn decimal(15,2),
 		cantidad int,
-		subtotal decimal(9,2),
+		subtotal decimal(15,2),
 		constraint FK_Factura foreign key (idFactura) references ventas.Factura(id),
 		constraint FK_Prod foreign key (idProd) references catalogo.Producto(id)
 	)

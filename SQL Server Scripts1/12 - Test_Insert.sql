@@ -61,6 +61,7 @@ where legajo=300000
 delete from recursosHumanos.Empleado
 where legajo=300000
 
+---***CARGO***
 --SP Para ingresar un cargo nuevo
 --Valida que el cargo no exista, intentemos ingresar uno que ya existe, por ejemplo, cajero
 exec recursosHumanos.insertarCargo 'cajero'
@@ -75,6 +76,7 @@ order by id
 delete from recursosHumanos.Cargo
 where cargo='Conserje'
 
+---***CATEGORIA***
 --SP para insertar una nueva linea de Producto junto con su categoria (tal como venian en el archivo, de a pares)
 --Si la linea de producto no existe la crea, si ya existe asocia la categoria a ese LP existente, si la categoria ya existe tira error
 --y avisa que la categoria ya esta registrada y asociada a un LP existente (y te muestra a cual)
@@ -116,6 +118,7 @@ where categoria='Magicos'
 delete from catalogo.LineaProducto 
 where lineaProd='Ocultos'
 
+---***LINEA DE PRODUCTO***
 --SP para insertar una linea de producto (sola, sin categoria)
 --Intentamos insertar una linea de producto nula
 exec catalogo.insertarLineaProducto ' '
@@ -136,7 +139,11 @@ where lineaProd='Ocultos'
 delete from catalogo.LineaProducto
 where lineaProd='Ocultos'
 
+---***PRODUCTO***
 --SP Para insertar un producto
+--intentamos ingresar un producto sin precios
+exec catalogo.insertarProducto 1,'Kiwi',NULL,NULL,1.29,kg,NULL,NULL,'fruta'
+
 --intentamos ingresar un producto que ya existe
 exec catalogo.insertarProducto 1,'Banana',0.26,NULL,1.29,kg,NULL,NULL,'fruta'
 
@@ -151,9 +158,10 @@ exec catalogo.insertarProducto 920392,'Bujias hescher',0.26,NULL,1.29,bujias,NUL
 
 --Ahora ingresemos un registro valido
 exec catalogo.insertarProducto NULL,'fruta del dragon',3000,NULL,NULL,NULL,NULL,NULL,'fruta'
-
+exec catalogo.insertarProducto NULL,'fruta del dragon',NULL,3,NULL,NULL,NULL,NULL,'fruta'
 --verificamos que se cargo correctamente en ambas tablas
-select p.id, p.nombre, p.precio, p.fecha, p.activo, c.categoria, lp.lineaProd from catalogo.Producto p
+select p.id, p.nombre, p.precio, p.fecha, p.activo, c.categoria, lp.lineaProd 
+from catalogo.Producto p
 inner join catalogo.perteneceA pa
 on p.id=pa.idProd
 inner join catalogo.Categoria c
@@ -161,16 +169,14 @@ on c.id=pa.idCategoria
 inner join catalogo.LineaProducto lp
 on lp.id=c.idLineaProd
 where p.nombre='fruta del dragon'
-
 --borramos los registros
-declare @idProd int
-set @idProd=(select id from catalogo.Producto where nombre='fruta del dragon')
 delete from catalogo.PerteneceA
-where idProd=@idProd
+where idProd in (select id from catalogo.Producto where nombre='fruta del dragon')
 
 delete from catalogo.producto
 where nombre='fruta del dragon'
 
+---***TIPO DE CLIENTE***
 --SP para insertar un tipo de cliente nuevo
 --intentamos insertar un null
 exec clientes.insertarTipoCliente null
@@ -184,6 +190,7 @@ select * from clientes.TipoCliente
 delete from clientes.TipoCliente
 where tipo='Pro'
 
+---***MEDIO DE PAGO***
 --SP Para insertar un nuevo medio de pago
 --intentamos ingresar un medio de pago existente
 exec comprobantes.insertarMedioDePago 'Credit card', 'Tarjeta de credito'
@@ -202,6 +209,7 @@ select * from comprobantes.MedioDePago
 delete from comprobantes.MedioDePago
 where nombreEsp='Tarjeta de debito'
 
+---***FACTURA***
 --SP para insertar una factura (venta) (nota: seguro algun error tenga en cuanto a validaciones porque me maree entre tantas...habria que testearlo mas)
 --intentamos insertar una factura que ya existe, junto con un tipo de factura inexistente, medio de pago inexistente... es decir, muchos datos erroneos 
 declare @tablaProds tablaProductosIdCant
