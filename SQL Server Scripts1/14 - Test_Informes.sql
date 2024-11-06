@@ -43,15 +43,16 @@ exec reportes.reporteTop5ProductosPorSemana null, null
 --Generamos el reporte de los 5 productos mas vendidos en un mes, por semana
 exec reportes.reporteTop5ProductosPorSemana 2, 2019
 
---***Repoerte para mostrar los 5 productos menos vendidos en el mes.***
+--***Reporte para mostrar los 5 productos menos vendidos en el mes.***
 --Probamos generar el reporte con mes y anio invalidos, esperamos un mensaje de error
 exec reportes.reporteTop5MenosVendidos -1, 0
 exec reportes.reporteTop5MenosVendidos null, null
 --Generamos el reporte de los 5 productos menos vendidos del mes
 exec reportes.reporteTop5MenosVendidos 2,2019
 
-select l.idProd, sum(l.cantidad) total from ventas.LineaDeFactura l
-join ventas.Factura f on l.idFactura = f.id
-where month(f.fecha) = 2 and year(f.fecha) = 2019
-group by l.idProd
-order by total asc
+--***Reporte para mostrar total acumulado de ventas (o sea tambien mostrar el detalle) 
+--para una fecha  y sucursal particulares 
+--Probamos generar el reporte con fecha y sucursal invalida, esperamos un mensaje de error
+exec reportes.totalAcumuladoFechaSucursal null, 0
+--Generamos el reporte para mostrar el acumulado de ventas por sucursal y fecha
+exec reportes.totalAcumuladoFechaSucursal '2019-01-01', 1

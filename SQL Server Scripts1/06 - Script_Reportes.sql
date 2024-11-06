@@ -339,6 +339,47 @@ begin
     from top5Productos as t1
     for xml path('Mes'), root('ReporteTop5Productos');
 end;
-
+go
 --Mostrar total acumulado de ventas (o sea tambien mostrar el detalle) para una fecha 
 --y sucursal particulares 
+create or alter proc reportes.totalAcumuladoFechaSucursal
+	@fecha date,
+	@idSucursal int
+as
+begin
+	declare @error varchar(200) = ''
+	if @fecha is null
+		set @error = @error + 'No se ingreso una fecha valida' + char(13) + char(10)
+	if not exists (select 1 from sucursales.Sucursal where id = @idSucursal)
+		set @error = @error + 'La sucursal ingresada no existe' + char(13) + char(10);
+	if @error <> ''
+	begin
+		raiserror(@error, 16, 1)
+		return
+	end;
+
+	with totalPorFactura as
+	(
+		select idFactura, sum(subtotal) as total
+		from ventas.LineaDeFactura
+		group by idFactura
+	)
+	select 
+		s.ciudad as Sucursal,
+		f.idFactura as Nro_Factura, 
+		f.fecha as Fecha,
+		f.hora as Hora,
+		f.empleadoLeg as Legajo_Empleado,
+		f.ciudadCliente as Ciudad_Cliente,
+		f.genero as Genero,
+		t.total as Total,
+		sum(t.total) over (partition by e.idSucursal) as Acumulado_Ventas
+	from ventas.Factura f 
+		join totalPorFactura t on t.idFactura = f.id
+		join recursosHumanos.Empleado e on e.legajo = f.empleadoLeg
+		join sucursales.Sucursal s on s.id = e.idSucursal
+	where f.fecha = @fecha and e.idSucursal = @idSucursal
+	order by f.hora
+	for xml path('Factura'), root('ReporteAcumuladoPorSucursal');
+end
+
