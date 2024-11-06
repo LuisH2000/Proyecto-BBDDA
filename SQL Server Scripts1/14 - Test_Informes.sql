@@ -1,5 +1,6 @@
 use Com5600G13
 go
+
 --***Reporte mensual con las ventas por dias***
 --Probamos generar el reporte con mes y anios invalidos, esperamos un mensaje de error
 exec reportes.reporteMensualPorDia -1,-2019
@@ -40,6 +41,17 @@ exec reportes.reporteProductosPorSucursal '2019-01-01', '2019-01-02'
 exec reportes.reporteTop5ProductosPorSemana -1, 0
 exec reportes.reporteTop5ProductosPorSemana null, null
 --Generamos el reporte de los 5 productos mas vendidos en un mes, por semana
-exec reportes.reporteTop5ProductosPorSemana 2019, 2
+exec reportes.reporteTop5ProductosPorSemana 2, 2019
 
+--***Repoerte para mostrar los 5 productos menos vendidos en el mes.***
+--Probamos generar el reporte con mes y anio invalidos, esperamos un mensaje de error
+exec reportes.reporteTop5MenosVendidos -1, 0
+exec reportes.reporteTop5MenosVendidos null, null
+--Generamos el reporte de los 5 productos menos vendidos del mes
+exec reportes.reporteTop5MenosVendidos 2,2019
 
+select l.idProd, sum(l.cantidad) total from ventas.LineaDeFactura l
+join ventas.Factura f on l.idFactura = f.id
+where month(f.fecha) = 2 and year(f.fecha) = 2019
+group by l.idProd
+order by total asc

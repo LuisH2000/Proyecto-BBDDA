@@ -239,13 +239,14 @@ begin
         select 
             p.id,
             p.nombre,
-            datepart(week, f.fecha) as semana,
+			DATEPART(WEEK, f.fecha) - DATEPART(WEEK, DATEADD(MONTH, DATEDIFF(MONTH, 0, f.fecha), 0)) + 1 AS semana,
+            --datepart(week, f.fecha) as semana,
             sum(l.cantidad) as total
         from ventas.Factura f
 			join ventas.LineaDeFactura l on l.idFactura = f.id
 			join catalogo.Producto p on p.id = l.idProd
         where year(f.fecha) = @anio and month(f.fecha) = @mes
-        group by p.id, p.nombre, datepart(week, f.fecha)
+        group by p.id, p.nombre, DATEPART(WEEK, f.fecha) - DATEPART(WEEK, DATEADD(MONTH, DATEDIFF(MONTH, 0, f.fecha), 0)) + 1
     ),
     -- CTE para clasificar y filtrar los 5 productos más vendidos por semana
     top5Productos as (
@@ -258,6 +259,7 @@ begin
         from ventasPorProducto
     )
     select 
+		@anio as Anio,
         @mes as Mes,
         semana as Semana,
         (
@@ -275,8 +277,68 @@ begin
     order by semana
     for xml path('Semana'), root('ReporteTop5Productos');
 end;
+go
 
 --Mostrar los 5 productos menos vendidos en el mes. 
+create or alter proc reportes.reporteTop5MenosVendidos
+    @mes int,
+	@anio int
+as
+begin
+    declare @error varchar(200) = ''
+
+    if @anio <= 0 or @anio is null
+    begin
+        set @error = @error + 'El año ingresado no es válido' + char(13) + char(10)
+    end
+    if @mes <= 0 OR @mes > 12 OR @mes IS NULL
+    begin
+        set @error = @error + 'El mes ingresado no es válido' + char(13) + char(10)
+    end
+
+    if @error <> ''
+    begin
+        raiserror(@error, 16, 1);
+        return
+    end;
+
+    -- CTE para obtener la cantidad total vendida de cada producto en el mes
+    with ventasPorProducto as (
+        select 
+            p.id,
+            p.nombre,
+            sum(l.cantidad) as total
+        from ventas.Factura f
+			join ventas.LineaDeFactura l on l.idFactura = f.id
+			join catalogo.Producto p on p.id = l.idProd
+        where year(f.fecha) = @anio and month(f.fecha) = @mes
+        group by p.id, p.nombre
+    ),
+    -- CTE para clasificar y filtrar los 5 productos menos vendidos
+    top5Productos as (
+        select 
+            id,
+            nombre,
+            total,
+            dense_rank() over (order by total asc) as rnk
+        from ventasPorProducto
+    )
+    select 
+		@anio as Anio,
+        @mes as Mes,
+        (
+            select 
+				rnk as Posicion,
+                id as IdProducto,
+                nombre as Nombre,
+                total as Total
+            from top5Productos as t2
+            where t2.rnk <= 5
+            for xml path('Producto'), type
+        ) as Productos
+    from top5Productos as t1
+    for xml path('Mes'), root('ReporteTop5Productos');
+end;
 
 --Mostrar total acumulado de ventas (o sea tambien mostrar el detalle) para una fecha 
 --y sucursal particulares 
