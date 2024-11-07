@@ -1,25 +1,48 @@
 use [Com5600G13]
 go
 
---SUCURSAL
-exec sucursales.darAltaSucursalEnBaja 4
-select * from sucursales.Sucursal
+--***SUCURSAL***
+--DAR DE ALTA SUCURSAL DE BAJA
+--Probamos con una sucursal que no existe
+exec sucursales.darAltaSucursalEnBaja -1
+--Damos de alta una sucursal de baja
+select * from sucursales.Sucursal where id = 1
+update sucursales.Sucursal set activo = 0 where id = 1
+exec sucursales.darAltaSucursalEnBaja 1
 
-exec sucursales.modificarDireccionSucursal 4, 'AV. Don Bosco 123', 'Moron'
-select * from sucursales.Sucursal
+--MODIFICAR DIRECCION
+--Probamos con una sucursal que no existe
+exec sucursales.modificarDireccionSucursal -1, 'AV. Don Bosco 123', 'Moron'
 --Probamos cambiar la direccion a una que tiene otra sucursal
+exec sucursales.modificarDireccionSucursal 1, ' Pres. Juan Domingo Perón 763, B1753AWO Villa Luzuriaga, Provincia de Buenos Aires', 'Lomas del Mirador'
+--Modificamos la direccion
+select * from sucursales.Sucursal
 exec sucursales.modificarDireccionSucursal 1, 'AV. Don Bosco 123', 'Moron'
 
-exec sucursales.modificarHorarioSucursal 4, 'L a V 8-10; S y D 10-12'
+update sucursales.Sucursal set 
+	direccion = 'Av. Brig. Gral. Juan Manuel de Rosas 3634, B1754 San Justo, Provincia de Buenos Aires',
+	ciudad = 'San Justo' 
+where id = 1
+
+--MODIFICAR HORARIO
+--Probamos con una sucursal que no existe
+exec sucursales.modificarHorarioSucursal -1, 'L a V 8-10; S y D 10-12'
+--Modificamos el horario
+select * from sucursales.Sucursal where id = 1
+exec sucursales.modificarHorarioSucursal 1, 'L a V 8-10; S y D 10-12'
+
+update sucursales.Sucursal set horario = 'L a V 8 a. m.–9 p. m. S y D 9 a. m.-8 p. m.' where id = 1
+
+--MODIFICAR TELEFONO
+--Probamos con una sucursal que no existe y un telefono invalido
+exec sucursales.modificarTelefonoSucursal -1, '12'
+--Modificamos el telefono
 select * from sucursales.Sucursal
+exec sucursales.modificarTelefonoSucursal 1, '2222-2222'
 
---Probamos un telefono invalido
-exec sucursales.modificarTelefonoSucursal 4, '12'
-exec sucursales.modificarTelefonoSucursal 4, '2222-2222'
-select * from sucursales.Sucursal
+update sucursales.Sucursal set telefono = '5555-5551' where id = 1
 
-
---EMPLEADO
+--***EMPLEADO***
 
 --CAMBIAR NOMBRE DE EMPLEADO USANDO SU LEGAJO
 --intentamos insertar un legajo y nombre nulo
@@ -349,12 +372,126 @@ select legajo,nombre,activo from recursosHumanos.empleado where dni=36383025
 exec recursosHumanos.darDeAltaEmpleadoPorDni 36383025
 select legajo,nombre,activo from recursosHumanos.empleado where dni=36383025
 
+---***CARGO***
+--Intentamos modificar el nombre de un cargo que no existe y un nombre invalido
+exec recursosHumanos.modificarNombreCargo @idCargo = null, @nvoNombre = '   '
+--Intentamos modificar el nombre a otro nombre que ya existe
+exec recursosHumanos.modificarNombreCargo @idCargo = 1, @nvoNombre = 'Supervisor'
+--Modficamos el nombre de un cargo
+select * from recursosHumanos.Cargo where id = 1
+exec recursosHumanos.modificarNombreCargo @idCargo = 1, @nvoNombre = 'Manager'
 
+update recursosHumanos.Cargo set cargo = 'Cajero' where id = 1
 
+---***LINEAPRODUCTO***
+--Intentamos modificar el nombre de una linea que no existe y un nombre invalido
+exec catalogo.modificarNombreLineaProducto @idLn = -1, @nvoNombre = null
+--Intentamos modificar el nombre a otro nombre que ya existe
+exec catalogo.modificarNombreLineaProducto @idLn = 1, @nvoNombre = 'Almacen'
+--Modificamos el nombre de una linea
+select * from catalogo.LineaProducto where id = 1
+exec catalogo.modificarNombreLineaProducto @idLn = 1, @nvoNombre = 'Mascotas'
 
+update catalogo.LineaProducto set lineaProd = 'Almacen' where id = 1
 
+---***TIPOCLIENTE***
+--Intentamos modificar el nombre de un tipo que no existe y un nombre invalido
+exec clientes.modificarNombreTipoCliente @idTipo = -1, @nvoNombre = null
+--Intentamos modificar el nombre a otro nombre que ya existe
+exec clientes.modificarNombreTipoCliente @idTipo = 1, @nvoNombre = 'Member'
+--Modificamos el nombre de una linea
+select * from clientes.TipoCliente where id = 1
+exec clientes.modificarNombreTipoCliente @idTipo = 1, @nvoNombre = 'VIP'
 
+update clientes.TipoCliente set tipo = 'Member' where id = 1
 
+--***CATEGORIA***
+--MODIFICAR NOMBRE
+--Intentamos modificar el nombre de una categoria que no existe y un nombre invalido
+exec catalogo.modificarNombreCategoria @idCat = -1, @nvoNombre = null
+--Intentamos modificar el nombre a otro nombre que ya existe
+exec catalogo.modificarNombreCategoria @idCat = 1, @nvoNombre = 'aceite_vinagre_y_sal'
+--Modificamos el nombre de una linea
+select * from catalogo.Categoria where id = 1
+exec catalogo.modificarNombreCategoria @idCat = 1, @nvoNombre = 'comida_mascota'
 
+update catalogo.Categoria set categoria = 'comida_mascota' where id = 1
 
+--MODIFICAR LINEA DE PRODUCTO
+--Intentamos modificar la linea de producto a la que pertenece una categoria inexistente
+-- a una linea inexistente
+exec catalogo.modificarLineaDeCategoria @idCat = -1 , @idLin = null 
+--Modificamos la linea de producto a la que pertenece una categoria
+select * from catalogo.Categoria where id = 1
+exec catalogo.modificarLineaDeCategoria @idCat = 1 , @idLin = 5
+
+update catalogo.Categoria set idLineaProd = 1 where id = 1
+
+--***MEDIODEPAGO***
+--Intentamos modificar los nombres de un medio de pago inexistente por nombres invalidos
+exec comprobantes.modificarNombresMedioPago @idMp = null , @nvoNomIng = null, @nvoNomEsp = '   '
+--Intentamos modificar los nombres por otros existentes
+exec comprobantes.modificarNombresMedioPago @idMp = 1 , @nvoNomIng = 'Credit card', @nvoNomEsp = 'Tarjeta de credito'
+--Modificamos los nombres de un medio de pago
+select * from comprobantes.MedioDePago where id = 1
+exec comprobantes.modificarNombresMedioPago @idMp = 1 , @nvoNomIng = 'Transfer', @nvoNomEsp = 'Transerencia'
+
+update comprobantes.MedioDePago
+set nombreEsp = 'Tarjeta de credito',
+	nombreIng = 'Credit card'
+where id = 1
+
+--***PRODUCTO***
+--MODIFICAR PRECIO
+--Intentamos modifcar el precio de un producto inexistente por un precio invalido
+exec catalogo.modificarPrecioProducto @idProd = -1, @nvoPrecio = 0
+--Modificamos el precio de un producto
+select * from catalogo.Producto where id = 1
+exec catalogo.modificarPrecioProducto @idProd = 1, @nvoPrecio = 1.23
+
+update catalogo.Producto set precio = 0.26 where id = 1
+
+--MODIFICAR PRECIO USD
+--Intentamos modifcar el precio de un producto inexistente por un precio invalido
+exec catalogo.modificarPrecioUSDProducto @idProd = -1, @nvoPrecio = null
+--Modificamos el precio en dolares de un producto
+select * from catalogo.Producto where id = 1
+exec catalogo.modificarPrecioUSDProducto @idProd = 1, @nvoPrecio = 1.23
+
+update catalogo.Producto set precioUSD = NULL where id = 1
+
+--MODIFICAR PRECIO REFERENCIA
+--Intentamos modifcar el precio de un producto inexistente por un precio invalido
+exec catalogo.modificarPrecioReferenciaProducto @idProd = -1, @nvoPrecio = null
+--Modificamos el precio en dolares de un producto
+select * from catalogo.Producto where id = 1
+exec catalogo.modificarPrecioReferenciaProducto @idProd = 1, @nvoPrecio = 3.08
+
+update catalogo.Producto set precioRef = 1.29 where id = 1
+
+--MODIFICAR FECHA
+--Intentamos modificar la fecha de un producto inexistente
+declare @fecha smalldatetime
+set @fecha = getdate()
+exec catalogo.modificarFechaProducto @idProd = null, @fechaYHora = @fecha
+--Intentamos modificar a una fecha mas antigua
+select * from catalogo.Producto where id = 1
+declare @fecha smalldatetime
+set @fecha = cast('20190721 12:06' as smalldatetime)
+exec catalogo.modificarFechaProducto @idProd = 1, @fechaYHora = @fecha
+--Modificamos la fecha de un producto
+select * from catalogo.Producto where id = 1
+declare @fecha smalldatetime
+set @fecha = getdate()
+exec catalogo.modificarFechaProducto @idProd = 1, @fechaYHora = @fecha
+
+update catalogo.Producto set fecha = cast('20200721 12:06' as smalldatetime) where id = 1
+
+--MODIFICAR A PRODUCTO ACTIVO
+--Intentamos dar de alta un producto que no existe
+exec catalogo.darAltaProductoEnBaja null
+--Damos de un alta un producto que no esta activo
+update catalogo.Producto set activo = 0 where id = 1
+select * from catalogo.Producto where id = 1
+exec catalogo.darAltaProductoEnBaja 1
 

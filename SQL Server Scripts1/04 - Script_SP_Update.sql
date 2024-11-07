@@ -17,22 +17,25 @@ Los nombres de los store procedures NO deben comenzar con “SP”.
 
 use Com5600G13
 go
---SUCURSAL
+---***SUCURSAL***
 create or alter proc sucursales.modificarDireccionSucursal
 	@id int,
 	@nvaDir varchar(100),
 	@nvaCiudad varchar(20)
 as
 begin
+	declare @error varchar(200) = ''
 	if @nvaDir is null or ltrim(rtrim(@nvaDir)) = ''
+		set @error = @error + 'La direccion ingresada esta vacia' + char(13) + char(10)
+	if not exists (select 1 from sucursales.Sucursal where id = @id)
+		set @error = @error + 'El id de la sucursal ingresada no existe' + char(13) + char(10)
+	else
+		if exists (select 1 from sucursales.Sucursal where direccion = @nvaDir and ciudad = @nvaCiudad)
+			set @error = @error + 'Ya existe una sucursal para la direccion y ciudad ingresada' + char(13) + char(10)
+	
+	if @error <> ''
 	begin
-		raiserror('La direccion ingresada esta vacia', 16, 1)
-		return
-	end
-
-	if exists (select 1 from sucursales.Sucursal where direccion = @nvaDir and ciudad = @nvaCiudad)
-	begin
-		raiserror('Ya existe una sucursal para la direccion y ciudad ingresada', 16, 1)
+		raiserror(@error, 16, 1)
 		return
 	end
 
@@ -48,6 +51,12 @@ create or alter proc sucursales.darAltaSucursalEnBaja
 	@id int
 as
 begin
+	if not exists (select 1 from sucursales.Sucursal where id = @id)
+	begin
+		raiserror('El id de la sucursal ingresada no existe', 16, 1)
+		return
+	end
+
 	update sucursales.Sucursal
 	set
 		activo = 1
@@ -60,9 +69,17 @@ create or alter proc sucursales.modificarHorarioSucursal
 	@nvoHorario varchar(50)
 as
 begin
+	declare @error varchar(200) = ''
+
+	if not exists (select 1 from sucursales.Sucursal where id = @id)
+		set @error = @error + 'El id de la sucursal ingresada no existe' + char(13) + char(10)
+	
 	if @nvoHorario is null or ltrim(rtrim(@nvoHorario)) = ''
+		set @error = @error + 'El horario ingresado esta vacio' + char(13) + char(10)
+
+	if @error <> ''
 	begin
-		raiserror('El horario ingresado esta vacio', 16, 1)
+		raiserror(@error, 16, 1)
 		return
 	end
 
@@ -78,15 +95,20 @@ create or alter proc sucursales.modificarTelefonoSucursal
 	@nvoTelefono char(9)
 as
 begin
+	declare @error varchar(200) = ''
+
+	if not exists (select 1 from sucursales.Sucursal where id = @id)
+		set @error = @error + 'El id de la sucursal ingresada no existe' + char(13) + char(10)
+	
 	if @nvoTelefono is null or ltrim(rtrim(@nvoTelefono)) = ''
-	begin
-		raiserror('El telefono ingresado esta vacio', 16, 1)
-		return
-	end
+		set @error = @error + 'El telefono ingresado esta vacio' + char(13) + char(10)
 
 	if @nvoTelefono not like ('[0-9][0-9][0-9][0-9]-[0-9][0-9][0-9][0-9]')
+		set @error = @error + 'El telefono ingresado no es valido, formato te telefono: xxxx-xxxx' + char(13) + char(10)
+
+	if @error <> ''
 	begin
-		raiserror ('El telefono ingresado no es valido, formato te telefono: xxxx-xxxx', 16, 1)
+		raiserror(@error, 16, 1)
 		return
 	end
 
@@ -97,7 +119,7 @@ begin
 end
 go
 
---EMPLEADO (acl: todos los SP de empleado van a tener una version donde al empleado se lo identifica por legajo, y otro donde se lo identifica por dni)
+---***EMPLEADO*** (acl: todos los SP de empleado van a tener una version donde al empleado se lo identifica por legajo, y otro donde se lo identifica por dni)
 	--cambiar nombre
 create or alter procedure recursosHumanos.cambiarNombreEmpleadoPorLegajo
 @legajo int,
@@ -558,21 +580,295 @@ begin
 	where dni=@dni
 end
 go
---CARGO, creo que no cambiamos nada
---LINEAPRODUCTO
-	--cambiar nombre de linea
---PRODUCTO
-	--cambiar nombre
-	--cambiar precio
-	--cambiar precio por categoria
-	--cambiar precioRef
-	--cambiar fecha
-	--dar de alta producto que estaba en baja
---CATEGORIA
-	--cambiar nombre
-	--cambiar la linea a la que pertenece
---TIPOCLIENTE, creo que no cambiamos nada
+---***CARGO***
+create or alter proc recursosHumanos.modificarNombreCargo
+	@idCargo int,
+	@nvoNombre varchar(20)
+as
+begin
+	declare @error varchar(max) = ''
+	set @nvoNombre = ltrim(rtrim(@nvoNombre))
+	if not exists (select 1 from recursosHumanos.Cargo where id = @idCargo)
+		set @error = @error + 'El id de cargo ingresado no existe' + char(13) + char(10)
+	if @nvoNombre is null or @nvoNombre = ''
+		set @error = @error + 'El nombre ingresado es invalido' + char(13) + char(10)
+	else
+		if exists (select 1 from recursosHumanos.Cargo where cargo = @nvoNombre)
+			set @error = @error + 'Ya existe un cargo con ese nombre' + char(13) + char(10)
+	
+	if @error <> ''
+	begin
+		raiserror(@error, 16, 1)
+		return
+	end
+
+	update recursosHumanos.Cargo
+	set cargo = @nvoNombre
+	where id = @idCargo
+		
+end
+go
+
+--***LINEAPRODUCTO***
+create or alter proc catalogo.modificarNombreLineaProducto
+	@idLn int,
+	@nvoNombre varchar(10)
+as
+begin
+	declare @error varchar(max) = ''
+	set @nvoNombre = ltrim(rtrim(@nvoNombre))
+	if not exists (select 1 from catalogo.LineaProducto where id = @idLn)
+		set @error = @error + 'El id de linea de producto ingresado no existe' + char(13) + char(10)
+	if @nvoNombre is null or @nvoNombre = ''
+		set @error = @error + 'El nombre ingresado no es valido' + char(13) + char(10)
+	else
+		if exists (select 1 from catalogo.LineaProducto where lineaProd = @nvoNombre)
+			set @error = @error + 'Ya existe una linea de producto con ese nombre' + char(13) + char(10)
+	
+	if @error <> ''
+	begin
+		raiserror(@error, 16, 1)
+		return
+	end
+
+	update catalogo.LineaProducto
+	set lineaProd = @nvoNombre
+	where id = @idLn
+end
+go
+
+--***TIPOCLIENTE***
+create or alter proc clientes.modificarNombreTipoCliente
+	@idTipo int,
+	@nvoNombre char(6)
+as
+begin
+	declare @error varchar(max) = ''
+	set @nvoNombre = ltrim(rtrim(@nvoNombre))
+	if not exists (select 1 from clientes.TipoCliente where id = @idTipo)
+		set @error = @error + 'El id de tipo de cliente ingresado no existe' + char(13) + char(10)
+	if @nvoNombre is null or @nvoNombre = ''
+		set @error = @error + 'El nombre ingresado no es valido' + char(13) + char(10)
+	else
+		if exists (select 1 from clientes.TipoCliente where tipo = @nvoNombre)
+			set @error = @error + 'Ya existe un tipo de cliente con ese nombre' + char(13) + char(10)
+	
+	if @error <> ''
+	begin
+		raiserror(@error, 16, 1)
+		return
+	end
+
+	update clientes.TipoCliente
+	set tipo = @nvoNombre
+	where id = @idTipo
+end
+go
+
+--***CATEGORIA***
+create or alter proc catalogo.modificarNombreCategoria
+	@idCat int,
+	@nvoNombre varchar(50)
+as
+begin
+	declare @error varchar(max) = ''
+	set @nvoNombre = ltrim(rtrim(@nvoNombre))
+	if not exists (select 1 from catalogo.Categoria where id = @idCat)
+		set @error = @error + 'El id de la categoria ingresada no existe' + char(13) + char(10)
+	if @nvoNombre is null or @nvoNombre = ''
+		set @error = @error + 'El nombre ingresado no es valido' + char(13) + char(10)
+	else
+		if exists (select 1 from catalogo.Categoria where categoria = @nvoNombre)
+			set @error = @error + 'Ya existe una categoria con ese nombre' + char(13) + char(10)
+	
+	if @error <> ''
+	begin
+		raiserror(@error, 16, 1)
+		return
+	end
+
+	update catalogo.Categoria
+	set categoria = @nvoNombre
+	where id = @idCat
+end
+go
+
+create or alter proc catalogo.modificarLineaDeCategoria
+	@idCat int,
+	@idLin int
+as
+begin
+	declare @error varchar(200) = ''
+	
+	if not exists (select 1 from catalogo.Categoria where id = @idCat)
+		set @error = @error + 'El id de la categoria ingresada no existe' + char(13) + char(10)
+	if not exists (select 1 from catalogo.LineaProducto where id = @idLin)
+		set @error = @error + 'El id de la linea de producto ingresada no es valida' + char(13) + char(10)
+
+	if @error <> ''
+	begin
+		raiserror(@error, 16, 1)
+		return
+	end
+
+	update catalogo.Categoria
+	set idLineaProd = @idLin
+	where id = @idCat
+
+end
+go
+
+--***MEDIODEPAGO***
+create or alter proc comprobantes.modificarNombresMedioPago
+	@idMp int,
+	@nvoNomIng varchar(11),
+	@nvoNomEsp varchar(22)
+as
+begin
+	declare @error varchar(200) = ''
+	set @nvoNomEsp = ltrim(rtrim(@nvoNomEsp))
+	set @nvoNomIng = ltrim(rtrim(@nvoNomIng))
+
+	if not exists (select 1 from comprobantes.MedioDePago where id = @idMp)
+		set @error = @error + 'El id del medio de pago ingresado no existe' + char(13) + char(10)
+	if @nvoNomEsp is null or @nvoNomEsp = ''
+		set @error = @error + 'El nombre en español ingresado no es valido' + char(13) + char(10)
+	else
+		if exists (select 1 from comprobantes.MedioDePago where nombreEsp = @nvoNomEsp)
+			set @error = @error + 'El nombre en español ingresado ya existe' + char(13) + char(10)
+	if @nvoNomIng is null or @nvoNomIng = ''
+		set @error = @error + 'El nombre en español ingresado no es valido' + char(13) + char(10)
+	else
+		if exists (select 1 from comprobantes.MedioDePago where nombreIng = @nvoNomIng)
+			set @error = @error + 'El nombre en ingles ingresado ya existe' + char(13) + char(10)
+
+	if @error <> ''
+	begin
+		raiserror(@error, 16, 1)
+		return
+	end
+
+	update comprobantes.MedioDePago
+	set nombreEsp = @nvoNomEsp,
+		nombreIng = @nvoNomIng
+	where id = @idMp
+end
+go
+--***PRODUCTO***
+create or alter proc catalogo.modificarPrecioProducto
+	@idProd int,
+	@nvoPrecio decimal(9,2)
+as
+begin
+	declare @error varchar(200) = ''
+
+	if @idProd is null or not exists (select 1 from catalogo.Producto where id = @idProd)
+		set @error = @error + 'El id del producto ingresado no existe' + char(13) + char(10)
+	if @nvoPrecio <= 0 or @nvoPrecio is null
+		set @error = @error + 'EL precio ingresado no es valido' + char(13) + char(10)
+
+	if @error <> ''
+	begin
+		raiserror(@error, 16, 1)
+		return
+	end
+
+	update catalogo.Producto
+	set precio = @nvoPrecio
+	where id = @idProd
+end
+go
+
+create or alter proc catalogo.modificarPrecioUSDProducto
+	@idProd int,
+	@nvoPrecio decimal(9,2)
+as
+begin
+	declare @error varchar(200) = ''
+
+	if @idProd is null or not exists (select 1 from catalogo.Producto where id = @idProd)
+		set @error = @error + 'El id del producto ingresado no existe' + char(13) + char(10)
+	if @nvoPrecio <= 0 or @nvoPrecio is null
+		set @error = @error + 'EL precio ingresado no es valido' + char(13) + char(10)
+
+	if @error <> ''
+	begin
+		raiserror(@error, 16, 1)
+		return
+	end
+
+	update catalogo.Producto
+	set precioUSD = @nvoPrecio
+	where id = @idProd
+end
+go
+
+create or alter proc catalogo.modificarPrecioReferenciaProducto
+	@idProd int,
+	@nvoPrecio decimal(9,2)
+as
+begin
+	declare @error varchar(200) = ''
+
+	if @idProd is null or not exists (select 1 from catalogo.Producto where id = @idProd)
+		set @error = @error + 'El id del producto ingresado no existe' + char(13) + char(10)
+	if @nvoPrecio <= 0 or @nvoPrecio is null
+		set @error = @error + 'EL precio ingresado no es valido' + char(13) + char(10)
+
+	if @error <> ''
+	begin
+		raiserror(@error, 16, 1)
+		return
+	end
+
+	update catalogo.Producto
+	set precioRef = @nvoPrecio
+	where id = @idProd
+end
+go
+
+create or alter proc catalogo.modificarFechaProducto
+	@idProd int,
+	@fechaYHora smalldatetime
+as
+begin
+	declare @error varchar(200) = ''
+
+	if @idProd is null or not exists (select 1 from catalogo.Producto where id = @idProd)
+		set @error = @error + 'El id del producto ingresado no existe' + char(13) + char(10)
+	else
+		if (select datediff(day, fecha, @fechaYHora) from catalogo.Producto where id = @idProd) < 0
+			set @error = @error + 'La fecha ingresada es anterior a la fecha que tiene asociada el producto' + char(13) + char(10)
+
+	if @error <> ''
+	begin
+		raiserror(@error, 16, 1)
+		return
+	end
+
+	update catalogo.Producto
+	set fecha = @fechaYHora
+	where id = @idProd
+end
+go
+
+create or alter proc catalogo.darAltaProductoEnBaja
+	@idProd int
+as
+begin
+	if @idProd is null or not exists (select 1 from catalogo.Producto where id = @idProd)
+	begin
+		raiserror('El id del producto ingresado no existe', 16, 1)
+		return
+	end
+
+	update catalogo.Producto set activo = 1 where id = @idProd
+end
+	--cambiar nombre?
+	--unidad ref?
+	--proveedor?
+	--cantxun?
+--PERTENECEA
 --FACTURA , creo que no cambiamos nada
 --LINEA DE FACTURA
---MEDIODEPAGO, creo que no cambiamos nada
 --COMPROBANTE, creo que no cambiamos nada
