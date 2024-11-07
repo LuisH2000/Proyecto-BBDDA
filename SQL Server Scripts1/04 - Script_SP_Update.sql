@@ -573,5 +573,6 @@ go
 	--cambiar la linea a la que pertenece
 --TIPOCLIENTE, creo que no cambiamos nada
 --FACTURA , creo que no cambiamos nada
+--LINEA DE FACTURA
 --MEDIODEPAGO, creo que no cambiamos nada
 --COMPROBANTE, creo que no cambiamos nada

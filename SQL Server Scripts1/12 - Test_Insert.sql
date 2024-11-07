@@ -282,3 +282,16 @@ delete ventas.LineaDeFactura
 	where idFactura in (select id from ventas.Factura 
 						where idFactura in ('239-12-1291', '980-23-2932' ))
 delete ventas.Factura where idFactura in ('239-12-1291', '980-23-2932')
+
+---***PerteneceA***
+--intentamos insertar datos nulos
+exec catalogo.agregarProductoACategoria null, null
+--intentamos agregar un producto a una categoria inexistente
+exec catalogo.agregarProductoACategoria 1, 1000
+--agregamos un producto a una categoria
+exec catalogo.agregarProductoACategoria 1, 2
+select * from catalogo.PerteneceA p 
+	join catalogo.Categoria c on c.id = p.idCategoria
+where idProd = 1
+--borramos el registro
+delete from catalogo.PerteneceA where idProd = 1 and idCategoria = 2

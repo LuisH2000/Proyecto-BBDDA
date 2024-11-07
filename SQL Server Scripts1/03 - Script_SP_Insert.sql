@@ -595,6 +595,7 @@ begin
 end
 go
 
+---***COMPROBANTE***
 create or alter proc comprobantes.insertarComprobante
 	@idPago char(23),
 	@mp int,
@@ -647,14 +648,34 @@ begin
 	insert into comprobantes.Comprobante(tipoComprobante, idPago, idMedPago, idFactura)
 		values('Factura', @idPago, @mp, @idFactura)
 end
+go
+---***PerteneceA***
+---Agregar producto a una categoria
+create or alter proc catalogo.agregarProductoACategoria
+	@idProd int,
+	@idCategoria int
+as
+begin
+	declare @error varchar(200) = ''
 
+	if @idProd is null
+		set @error = @error + 'No se ingreso el id del producto' + +CHAR(13)+CHAR(10)
+	if @idCategoria is null
+		set @error = @error + 'No se ingreso el id d la categoria' + +CHAR(13)+CHAR(10)
+	else
+	begin
+		if not exists (select 1 from catalogo.Categoria where id = @idCategoria)
+			set @error = @error + 'No existe categoria para el id ingresado' + +CHAR(13)+CHAR(10)
+	end
 
---EMPLEADO
---CARGO
---LINEAPRODUCTO
---CATEGORIA
---PRODUCTO
---TIPOCLIENTE
---FACTURA (recibe una tabla con los productos a guardar en lineafactura)
---MEDIODEPAGO
---COMPROBANTE
+	if @error <> ''
+	begin
+		raiserror(@error, 16, 1)
+		return
+	end
+
+	insert into catalogo.PerteneceA(idCategoria, idProd)
+		values(@idCategoria, @idProd)
+end
+
+--LINEA DE FACTURA

@@ -248,7 +248,8 @@ begin
 	(
 		id int identity(1,1) primary key,
 		nombreIng varchar(11) unique,
-		nombreEsp varchar(22) unique
+		nombreEsp varchar(22) unique,
+		activo int default 1
 	)
 end
 go
