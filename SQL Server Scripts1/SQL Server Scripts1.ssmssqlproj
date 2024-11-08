@@ -76,11 +76,11 @@
           <AssociatedConnUserName />
           <FullPath>08 - SP_Generar_Nota_de_Credito.sql</FullPath>
         </FileNode>
-        <FileNode Name="09 - Script_Logins.sql">
+        <FileNode Name="09 - Script_Roles.sql">
           <AssociatedConnectionMoniker>8c91a03d-f9b4-46c0-a305-b5dcc79ff907:DESKTOP-K2ACL7T\SQLEXPRESS:True</AssociatedConnectionMoniker>
           <AssociatedConnSrvName>DESKTOP-K2ACL7T\SQLEXPRESS</AssociatedConnSrvName>
           <AssociatedConnUserName />
-          <FullPath>09 - Script_Logins.sql</FullPath>
+          <FullPath>09 - Script_Roles.sql</FullPath>
         </FileNode>
         <FileNode Name="10 - Test_Importar_Archivos.sql">
           <AssociatedConnectionMoniker>8c91a03d-f9b4-46c0-a305-b5dcc79ff907:DESKTOP-K2ACL7T\SQLEXPRESS:True</AssociatedConnectionMoniker>
@@ -117,6 +117,12 @@
           <AssociatedConnSrvName>DESKTOP-K2ACL7T\SQLEXPRESS</AssociatedConnSrvName>
           <AssociatedConnUserName />
           <FullPath>15 - Test_Nota_de_Credito.sql</FullPath>
+        </FileNode>
+        <FileNode Name="16 - Test_Roles.sql">
+          <AssociatedConnectionMoniker>8c91a03d-f9b4-46c0-a305-b5dcc79ff907:DESKTOP-K2ACL7T\SQLEXPRESS:True</AssociatedConnectionMoniker>
+          <AssociatedConnSrvName>DESKTOP-K2ACL7T\SQLEXPRESS</AssociatedConnSrvName>
+          <AssociatedConnUserName />
+          <FullPath>16 - Test_Roles.sql</FullPath>
         </FileNode>
       </Items>
     </LogicalFolder>
