@@ -73,7 +73,7 @@ exec recursosHumanos.cambiarNombreEmpleadoPorDni 36383025,'Romina Alejandra'
 --usando legajo
 --intentamos insertar parametros nulos
 exec recursosHumanos.cambiarApellidoEmpleadoPorLegajo null,null
---ahora un caso valido (ejecuta todo el bloque)
+--ahora un caso valido donde cambiamos el apellido de lo que sea que tenga a Ramirez y luego denuevo al original (ejecuta todo el bloque)
 declare @legajo int
 declare @apellidoOri varchar(50)
 set @legajo=(select top 1 legajo from recursosHumanos.empleado)
@@ -84,6 +84,7 @@ select * from recursosHumanos.Empleado where legajo=@legajo
 exec recursosHumanos.cambiarApellidoEmpleadoPorLegajo @legajo,@apellidoOri
 select * from recursosHumanos.Empleado where legajo=@legajo
 go
+
 --usando dni (ejecuta todo el bloque)
 DECLARE @dni INT
 DECLARE @apellidoOri VARCHAR(50)
@@ -100,7 +101,7 @@ go
 --usando legajo
 --intentamos insertar con un legajo inexistente y una direccion vacia
 exec recursosHumanos.cambiarDireccionEmpleadoPorLegajo 29320,'       '
---ahora probamos un caso valido (ejecutar bloque entero)
+--ahora probamos un caso valido cambiandole la direccion al empleado y luego restaurandolo. (ejecutar bloque entero)
 declare @legajo int
 declare @direccionOri varchar(100)
 set @legajo=(select top 1 legajo from recursosHumanos.empleado)
@@ -247,8 +248,6 @@ select e.dni, e.nombre, c.cargo from recursosHumanos.Empleado e inner join recur
 go
 
 --CAMBIAR SUCURSAL DE UN EMPLEADO
-select * from sucursales.sucursal
-select * from recursosHumanos.empleado
 --por legajo
 --intentamos ingresar datos nulos
 exec recursosHumanos.cambiarSucursalEmpleadoPorLegajo null,null
@@ -256,7 +255,7 @@ exec recursosHumanos.cambiarSucursalEmpleadoPorLegajo null,null
 --intentamos ingresar un legajo que no existe y una sucursal que tampoco existe
 exec recursosHumanos.cambiarSucursalEmpleadoPorLegajo 1,29392
 
---ahora un caso valido (ejecutar bloque completo)
+--ahora un caso valido donde cambiamos la sucursal en la que trabaja el empleado y luego lo restauramos (ejecutar bloque completo)
 declare @idSucursalNuevo int
 declare @idSucursalOri int
 declare @legajo int
@@ -305,7 +304,7 @@ exec recursosHumanos.cambiarTurnoEmpleadoPorLegajo null,null
 --intentamos ingresar un turno que no existe con un legajo que no existe
 exec recursosHumanos.cambiarTurnoEmpleadoPorLegajo 29,'Jornada nocturna'
 
---ahora un caso valido (ejecutar bloque completo)
+--ahora un caso valido donde cambiamos el turno a turno mañana y luego lo restauramos (ejecutar bloque completo)
 declare @legajo int
 declare @turnoViejo varchar(20)
 set @legajo=(select top 1 legajo from recursosHumanos.empleado)
@@ -495,3 +494,110 @@ update catalogo.Producto set activo = 0 where id = 1
 select * from catalogo.Producto where id = 1
 exec catalogo.darAltaProductoEnBaja 1
 
+--CAMBIAR CATEGORIA DE PRODUCTO
+--intentamos cambiar la categoria de un producto a uno que no existe
+exec catalogo.modificarCategoriaDeProducto 1,19000
+--ahora intentamos con datos nulos
+exec catalogo.modificarCategoriaDeProducto null,null
+--ahora con un producto que no existe
+exec catalogo.modificarCategoriaDeProducto 190291,3
+
+--ahora un caso valido donde cambiamos la categoria del producto y luego lo restauramos usando el mismo sp (ejecutar bloque completo)
+declare @idProd int
+declare @nuevaCat int
+declare @oriCat int
+set @idProd=(select top 1 id from catalogo.producto)
+set @oriCat=(select c.id from catalogo.Categoria c inner join catalogo.PerteneceA a on c.id=a.idCategoria where a.idProd=@idProd)
+set @nuevaCat=(select top 1 id from catalogo.Categoria where id<>@oriCat)
+select p.id, p.nombre, c.categoria,lp.lineaProd from catalogo.Producto p inner join catalogo.PerteneceA pa on p.id=pa.idProd inner join
+catalogo.categoria c on c.id=pa.idCategoria inner join catalogo.LineaProducto lp on lp.id=c.idLineaProd where p.id=@idProd
+exec catalogo.modificarCategoriaDeProducto @idProd,@nuevaCat --cambiamos la categoria usando el sp
+select p.id, p.nombre, c.categoria,lp.lineaProd from catalogo.Producto p inner join catalogo.PerteneceA pa on p.id=pa.idProd inner join
+catalogo.categoria c on c.id=pa.idCategoria inner join catalogo.LineaProducto lp on lp.id=c.idLineaProd where p.id=@idProd
+exec catalogo.modificarCategoriaDeProducto @idProd,@oriCat --restauramos la categoria tambien usando el sp
+select p.id, p.nombre, c.categoria,lp.lineaProd from catalogo.Producto p inner join catalogo.PerteneceA pa on p.id=pa.idProd inner join
+catalogo.categoria c on c.id=pa.idCategoria inner join catalogo.LineaProducto lp on lp.id=c.idLineaProd where p.id=@idProd
+--nota que si modificas la categoria de un producto, su linea de producto tambien cambia (ya que la categoria se asocia a una lp especifica)
+
+--AUMENTAR PRECIO DE PRODUCTO CON PORCENTAJE POR CATEGORIA
+--intentamos ingresar un porcentaje y id de categoria nulos
+exec catalogo.aumentarPrecioProductoPorCategoria null,null
+--ahora una categoria que existe pero porcentaje 0
+exec catalogo.aumentarPrecioProductoPorCategoria 1,0
+
+--ahora intentemos un caso valido, para esto ejecutamos la transaccion completa
+begin transaction
+select top 5 p.id,p.nombre,p.precio,c.categoria from catalogo.Producto p
+inner join catalogo.PerteneceA pa
+on p.id=pa.idProd
+inner join catalogo.categoria c
+on c.id=pa.idCategoria
+where c.id=1
+--ejecutamos el sp
+exec catalogo.aumentarPrecioProductoPorCategoria 1,100 --aumentamos el precio un 100% (duplicamos)
+--vemos el aumento
+select top 5 p.id,p.nombre,p.precio,c.categoria from catalogo.Producto p
+inner join catalogo.PerteneceA pa
+on p.id=pa.idProd
+inner join catalogo.categoria c
+on c.id=pa.idCategoria
+where c.id=1
+--deshacemos el update con rollback
+rollback
+
+--REDUCIR PRECIO DE PRODUCTO CON PORCENTAJE POR CATEGORIA
+--intentamos ingresar un porcentaje y categoria nulos
+exec catalogo.reducirPrecioProductoPorCategoria null,null
+--ahora una categoria que existe pero porcentaje 0
+exec catalogo.reducirPrecioProductoPorCategoria 1,0
+--ahora lo mismo pero con un porcentaje mayor a 100
+exec catalogo.reducirPrecioProductoPorCategoria 1,100
+
+--ahora un caso valido, para esto ejecutamos la transaccion completa
+begin transaction
+select top 5 p.id,p.nombre,p.precio,c.categoria from catalogo.Producto p
+inner join catalogo.PerteneceA pa
+on p.id=pa.idProd
+inner join catalogo.categoria c
+on c.id=pa.idCategoria
+where c.id=1
+--ejecutamos el sp
+exec catalogo.reducirPrecioProductoPorCategoria 1,50 --reducimos el precio a la mitad (50% de descuento)
+--vemos el aumento
+select top 5 p.id,p.nombre,p.precio,c.categoria from catalogo.Producto p
+inner join catalogo.PerteneceA pa
+on p.id=pa.idProd
+inner join catalogo.categoria c
+on c.id=pa.idCategoria
+where c.id=1
+--deshacemos el update con rollback
+rollback
+
+--CAMBIAR NOMBRE DE UN PRODUCTO
+--intentamos usar datos nulos
+exec catalogo.modificarNombreProducto null,null
+--ahora un idProd inexistente junto con un nombre de espacios solos
+exec catalogo.modificarNombreProducto 1,'    '
+--ahora un caso valido (ejecutar transaccion completa)
+begin transaction
+select id,nombre,precio from catalogo.producto where id=1
+exec catalogo.modificarNombreProducto 1,'Bujia hescher'
+--vemos el cambio
+select id,nombre,precio from catalogo.producto where id=1
+--deshacemos el cambio
+rollback
+
+--CAMBIAR PROVEEDOR DE UN PRODUCTO
+--intentamos usar datos nulos
+exec catalogo.modificarProveedorProducto null,null
+--ahora un idProducto inexistente junto con un proveedor de espacios solos
+exec catalogo.modificarProveedorProducto 293202,'        '
+
+--ahora un caso valido
+begin transaction
+select id,nombre,precio,proveedor from catalogo.producto where id=1
+exec catalogo.modificarProveedorProducto 1,'Kwik-E-Mart'
+--vemos los cambios
+select id,nombre,precio,proveedor from catalogo.producto where id=1
+--deshacemos los cambios
+rollback

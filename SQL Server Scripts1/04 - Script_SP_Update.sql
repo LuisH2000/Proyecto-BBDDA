@@ -717,7 +717,6 @@ begin
 
 end
 go
-
 --***MEDIODEPAGO***
 create or alter proc comprobantes.modificarNombresMedioPago
 	@idMp int,
@@ -864,9 +863,146 @@ begin
 
 	update catalogo.Producto set activo = 1 where id = @idProd
 end
-	--cambiar nombre?
-	--unidad ref?
-	--proveedor?
+go
+--nico
+create or alter proc catalogo.modificarCategoriaDeProducto
+@idProd int,
+@idCatNvo int
+as
+begin
+	declare @error varchar(max)=''
+	if @idProd is null
+		set @error=@error+'No se ingreso un id de producto'+char(13)+char(10)
+	else if not exists(select 1 from catalogo.Producto where id=@idProd)
+		set @error=@error+'El id de producto ingresado no existe.'+char(13)+char(10)
+	if @idCatNvo is null
+		set @error=@error+'No se ingreso un id de categoria.'+char(13)+char(10)
+	else if not exists(select 1 from catalogo.categoria where id=@idCatNvo)
+		set @error=@error+'El id de categoria ingresado no existe.'+char(13)+char(10)
+	if @error<>''
+	begin
+		raiserror(@error,16,1)
+		return
+	end
+	update catalogo.PerteneceA
+	set idCategoria=@idCatNvo
+	where idProd=@idProd
+end
+go
+
+create or alter proc catalogo.aumentarPrecioProductoPorCategoria
+@idCategoria int,
+@porcentaje int
+as
+begin
+	declare @error varchar(max)=''
+	declare @mult decimal(5,4)
+	if @idCategoria is null
+		set @error=@error+'No se ingreso un id de categoria.'+char(13)+char(10)
+	else if not exists(select 1 from catalogo.categoria where id=@idCategoria)
+		set @error=@error+'El id de categoria ingresado no existe.'+char(13)+char(10)
+	if @porcentaje is null
+		set @error=@error+'No se ingreso un porcentaje de aumento.'+char(13)+char(10)
+	else if @porcentaje<=0
+		set @error=@error+'El porcentaje debe ser mayor que 0.'+char(13)+char(10)
+	if @error<>''
+	begin
+		raiserror(@error,16,1)
+		return
+	end
+	set @mult=1+@porcentaje/100.0;
+	with productosDeLaCategoria (idProd)
+	as
+	(select p.id from catalogo.Producto p
+	inner join catalogo.PerteneceA pa
+	on p.id=pa.idProd
+	where pa.idCategoria=@idCategoria)
+	update catalogo.Producto
+	set precio=precio*@mult
+	where id in (select idProd from productosDeLaCategoria)
+end
+go
+
+create or alter proc catalogo.reducirPrecioProductoPorCategoria
+@idCategoria int,
+@porcentaje int
+as
+begin
+	declare @error varchar(max)=''
+	declare @mult decimal(5,4)
+	if @idCategoria is null
+		set @error=@error+'No se ingreso un id de categoria.'+char(13)+char(10)
+	else if not exists(select 1 from catalogo.categoria where id=@idCategoria)
+		set @error=@error+'El id de categoria ingresado no existe.'+char(13)+char(10)
+	if @porcentaje is null
+		set @error=@error+'No se ingreso un porcentaje de aumento.'+char(13)+char(10)
+	else if @porcentaje<=0 or @porcentaje>=100
+		set @error=@error+'El porcentaje debe estar entre 0 y 100 (sin incluir estos).'+char(13)+char(10)
+	if @error<>''
+	begin
+		raiserror(@error,16,1)
+		return
+	end
+	set @mult=@porcentaje/100.0;
+	with productosDeLaCategoria (idProd)
+	as
+	(select p.id from catalogo.Producto p
+	inner join catalogo.PerteneceA pa
+	on p.id=pa.idProd
+	where pa.idCategoria=@idCategoria)
+	update catalogo.Producto
+	set precio=precio-precio*@mult
+	where id in (select idProd from productosDeLaCategoria)
+end
+go
+
+create or alter proc catalogo.modificarNombreProducto
+@idProducto int,
+@nombreNvo varchar(100)
+as
+begin
+	declare @error varchar(max)=''
+	set @nombreNvo=ltrim(rtrim(@nombreNvo))
+	if @idProducto is null
+		set @error=@error+'No se ingreso un id de producto.'+char(13)+char(10)
+	else if not exists(select 1 from catalogo.producto where id=@idProducto)
+		set @error=@error+'El producto ingresado no existe.'+char(13)+char(10)
+	if @nombreNvo is null or @nombreNvo=''
+		set @error=@error+'No se ingreso un nombre nuevo para el producto.'+char(13)+char(10)
+	if @error<>''
+	begin
+		raiserror(@error,16,1)
+		return
+	end
+	update catalogo.producto
+	set nombre=@nombreNvo
+	where id=@idProducto
+end
+go
+
+create or alter proc catalogo.modificarProveedorProducto
+@idProducto int,
+@proveedorNvo varchar(50)
+as
+begin
+	declare @error varchar(max)=''
+	set @proveedorNvo=rtrim(ltrim(@proveedorNvo))
+	if @idProducto is null
+		set @error=@error+'No se ingreso un id de producto.'+char(13)+char(10)
+	else if not exists (select 1 from catalogo.Producto where id=@idProducto)
+		set @error=@error+'El producto ingresado no existe.'+char(13)+char(10)
+	if @proveedorNvo is null or @proveedorNvo=''
+		set @error=@error+'No se ingreso un proveedor nuevo.'+char(13)+char(10)
+	if @error<>''
+	begin
+		raiserror(@error,16,1)
+		return
+	end
+	update catalogo.Producto
+	set proveedor=@proveedorNvo
+	where id=@idProducto
+end
+go
 	--cantxun?
 --PERTENECEA
 --FACTURA , creo que no cambiamos nada
