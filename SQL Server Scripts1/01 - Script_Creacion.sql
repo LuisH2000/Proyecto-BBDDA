@@ -264,6 +264,9 @@ begin
 		idPago char(23),
 		idMedPago int,
 		idFactura int,
+		fecha date,
+		hora time,
+		monto decimal(15,2),
 		constraint FK_MedPago foreign key (idMedPago) references comprobantes.MedioDePago(id),
 		constraint FK_Comprobante_Factura foreign key (idFactura) references ventas.Factura(id)
 	)

@@ -474,16 +474,24 @@ begin
 	from #ventasTemp t join clientes.TipoCliente c on c.tipo = t.tipoCliente
 	where not exists (select 1 from ventas.Factura v where v.idFactura = t.idFactura and v.tipoFactura = t.tipo)
 
-	insert into comprobantes.Comprobante(tipoComprobante, idPago, idMedPago, idFactura)
-	select 'Factura', t.idPago, m.id, fa.id
-	from #ventasTemp t join comprobantes.MedioDePago m on m.nombreIng = t.medioPago join ventas.Factura fa on fa.idFactura = t.idFactura
-	where not exists (select 1 from comprobantes.Comprobante c where c.idPago = t.idPago)
-
 	insert into ventas.LineaDeFactura(idFactura, idProd, precioUn, cantidad, subtotal)
 	select fa.id , p.id, t.precioUn, t.cantidad, (cast(t.precioUn as decimal(6,2)) * cast(t.cantidad as int))
 	from #ventasTemp t join catalogo.Producto p on p.nombre = t.nomProd and p.precio = t.precioUn join ventas.Factura fa on fa.idFactura = t.idFactura 
-	where not exists( select 1 from ventas.LineaDeFactura f where fa.idFactura = t.idFactura and f.idProd = p.id and f.precioUn = t.precioUn)
+	where not exists( select 1 from ventas.LineaDeFactura f where fa.idFactura = t.idFactura and f.idProd = p.id and f.precioUn = t.precioUn);
 
+	with totalPorFactura as
+	(
+		select idFactura, sum(subtotal) as total
+		from ventas.LineaDeFactura
+		group by idFactura
+	)
+	insert into comprobantes.Comprobante(tipoComprobante, idPago, idMedPago, idFactura, fecha, hora, monto)
+	select 'Factura', t.idPago, m.id, fa.id, fa.fecha, fa.hora, tot.total
+	from #ventasTemp t 
+		join comprobantes.MedioDePago m on m.nombreIng = t.medioPago 
+		join ventas.Factura fa on fa.idFactura = t.idFactura
+		join totalPorFactura tot on tot.idFactura = fa.id
+	where not exists (select 1 from comprobantes.Comprobante c where c.idPago = t.idPago)
 	drop table #ventasTemp
 end
 go

@@ -604,6 +604,7 @@ as
 begin
 	declare @error varchar(max) = ''
 	declare @idFactura int
+	declare @total decimal(15,2)
 	set @idPago = ltrim(rtrim(@idPago))
 	set @factura = ltrim(rtrim(@factura))
 	--verificamos que el id de pago no este vacio
@@ -643,12 +644,20 @@ begin
 
 	update ventas.Factura
 	set estado = 'Pagada'
-	where id = @idFactura
-	
-	insert into comprobantes.Comprobante(tipoComprobante, idPago, idMedPago, idFactura)
-		values('Factura', @idPago, @mp, @idFactura)
+	where id = @idFactura;
+
+	with totalPorFactura as
+	(
+		select idFactura, sum(subtotal) as total
+		from ventas.LineaDeFactura
+		group by idFactura
+	)
+	select @total = total from totalPorFactura where idFactura = @idFactura
+	insert into comprobantes.Comprobante(tipoComprobante, idPago, idMedPago, idFactura, fecha, hora, monto)
+		values('Factura', @idPago, @mp, @idFactura, getdate(), convert(time, getdate()), @total)
 end
 go
+
 ---***PerteneceA***
 ---Agregar producto a una categoria
 create or alter proc catalogo.agregarProductoACategoria

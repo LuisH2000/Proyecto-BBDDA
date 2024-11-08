@@ -277,7 +277,7 @@ from comprobantes.Comprobante c
 join ventas.Factura f on f.id = c.idFactura
 where idPago = '123' or f.idFactura = '980-23-2932'
 --borramos el comprobante y las facturas
-delete comprobantes.Comprobante where idFactura = 1002
+delete comprobantes.Comprobante where idFactura = 1002 or idFactura = 1001
 delete ventas.LineaDeFactura 
 	where idFactura in (select id from ventas.Factura 
 						where idFactura in ('239-12-1291', '980-23-2932' ))
