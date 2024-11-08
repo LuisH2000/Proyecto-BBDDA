@@ -7,7 +7,6 @@ Bases de Datos Aplicadas
 Alumnos:
 	- Diaz, Nicolas 41714473
 	- Huang, Luis 43098142
-	- Rolleri Vilalba, Santino 46026386
 
 **ENUNCIADO**
 Genere store procedures para manejar la inserción, modificado, borrado (si corresponde, 
@@ -492,28 +491,21 @@ create or alter procedure ventas.insertarFactura
 @idFactura char(11), --no null, unico
 @tipoFactura char(1), --no null, debe ser A B o C
 @empleadoLeg int, --no null, debe existir
-@ciudadCliente varchar(20), --puede ser null, si viene vacio se reemplaza por null
-@genero char(6), --no puede ser null, debe ser male o female
-@tipoCliente char(6), --no null
+@idCliente int,
 @prodsId tablaProductosIdCant READONLY --debe venir con al menos 1 registro valido con cantidades validas
 as
 begin
 	declare @error varchar(max)=''
-	declare @idTipoCliente int
 	declare @idProductosConf table
 	(
-	idProd int,
-	cant int,
-	precio decimal(9,2),
-	precioUsd decimal(9,2)
+		idProd int,
+		cant int,
+		precio decimal(9,2),
+		precioUsd decimal(9,2)
 	)
 	declare @idRealFactura int
-	declare @idMedioPago int
 	--normalizamos los datos de entrada
 	set @idFactura=RTRIM(ltrim(@idFactura))
-	set @ciudadCliente=RTRIM(ltrim(@ciudadCliente))
-	set @genero=RTRIM(ltrim(@genero))
-	set @tipoCliente=RTRIM(ltrim(@tipoCliente))
 	set @tipoFactura=UPPER(@tipoFactura)
 	--verificamos campos que no pueden ser nulos
 	if @idFactura is null or @idFactura=''
@@ -522,13 +514,9 @@ begin
 		set @error=@error+'No se ingreso un tipo de factura.'+CHAR(13)+CHAR(10)
 	if @empleadoLeg is null
 		set @error=@error+'No se ingreso un legajo para indicar el empleado que realizo la venta.'+CHAR(13)+CHAR(10)
-	if @tipoCliente is null or @tipoCliente=''
-		set @error=@error+'No se ingreso un tipo de cliente.'+CHAR(13)+CHAR(10)
-	if @genero is null or @genero=''
-		set @error=@error+'No se ingreso un genero para el cliente, este debe ser male o female.'+char(13)+char(10)
-	--seteamos aquellos campos que vienen vacios en null
-	if @ciudadCliente=''
-		set @ciudadCliente=null
+	if not exists (select 1 from clientes.Cliente where id = @idCliente)
+		set @error=@error+'El cliente ingresado no existe'+CHAR(13)+CHAR(10)
+
 	--verificaciones generales
 	--Pasamos a una tabla variable aquellos productos que si existen en catalogo.producto
 	insert into @idProductosConf
@@ -553,13 +541,6 @@ begin
 	--verificamos que el empleado exista
 	if not exists (select 1 from recursosHumanos.Empleado where legajo=@empleadoLeg)
 		set @error=@error+'El empleado ingresado no existe, inserte ese empleado usando recursosHumanos.insertarEmpleadoSucursalPorCiudadDireccion y luego cargue la factura.'+CHAR(13)+CHAR(10)
-	--verificamos que el tipo de cliente ingresado exista
-	set @idTipoCliente=(select id from clientes.TipoCliente where tipo=@tipoCliente)
-	if @idTipoCliente is null
-		set @error=@error+'El tipo de cliente ingresado no existe, inserte este tipo de cliente usando clientes.insertarTipoCliente y luego cargue la factura.'+CHAR(13)+CHAR(10)
-	--verificamos que el genero del cliente sea male o female
-	if @genero not in ('male','female')
-		set @error=@error+'El genero del cliente debe ser male o female.'+char(13)+char(10)
 	if @error<>''
 	begin
 		raiserror(@error,16,1)
@@ -584,8 +565,8 @@ begin
 		where precio is null
 	end
 	--Una vez pasadas todas las verificaciones insertamos
-	insert into ventas.factura (idFactura, tipoFactura,fecha,hora,empleadoLeg,ciudadCliente,genero,idTipoCliente)
-	values(@idFactura,@tipoFactura,cast(getdate() as date), cast(getdate() as time),@empleadoLeg,@ciudadCliente,@genero,@idTipoCliente);
+	insert into ventas.factura (idFactura, tipoFactura,fecha,hora,empleadoLeg, idCliente)
+	values(@idFactura,@tipoFactura,cast(getdate() as date), cast(getdate() as time),@empleadoLeg, @idCliente);
 	--capturamos el id real autogenerado de la factura
 	set @idRealFactura=(select id from ventas.factura where idFactura=@idFactura)
 	--creamos las lineas de factura asociadas
@@ -687,4 +668,6 @@ begin
 		values(@idCategoria, @idProd)
 end
 
---LINEA DE FACTURA
+--LINEA DE FACTURA tener en cuenta que si se inserta una linea de factura y la factura
+-- ya tiene ese producto, incrementar la cantidad de esa linea
+-- CLIENTE

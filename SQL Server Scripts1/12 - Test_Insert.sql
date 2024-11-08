@@ -210,28 +210,28 @@ delete from comprobantes.MedioDePago
 where nombreEsp='Tarjeta de debito'
 
 ---***FACTURA***
---SP para insertar una factura (venta) (nota: seguro algun error tenga en cuanto a validaciones porque me maree entre tantas...habria que testearlo mas)
+--SP para insertar una factura (venta) 
 --intentamos pasar solo parametros null
 declare @tablaProds tablaProductosIdCant
 insert into @tablaProds
 values(1,2),(2,2)
-exec ventas.insertarFactura @idFactura = null,@tipoFactura = null,@empleadoLeg = null, @ciudadCliente = NULL, @genero = NULL, @tipoCliente = null, @prodsId = @tablaProds
---intentamos insertar una factura que ya existe, junto con un tipo de factura inexistente, empleado inexsistente, genero invalido, tipo cliente inexistente
+exec ventas.insertarFactura @idFactura = null,@tipoFactura = null,@empleadoLeg = null, @idCliente = null, @prodsId = @tablaProds
+--intentamos insertar una factura que ya existe, junto con un tipo de factura inexistente, empleado inexsistente, cliente inexistente
 declare @tablaProds tablaProductosIdCant
 insert into @tablaProds
 values(1,2),(2,2)
-exec ventas.insertarFactura @idFactura = '750-67-8428',@tipoFactura = 'K',@empleadoLeg = 28, @ciudadCliente = NULL, @genero = 'Other', @tipoCliente = 'VIP', @prodsId = @tablaProds
+exec ventas.insertarFactura @idFactura = '750-67-8428',@tipoFactura = 'K',@empleadoLeg = 28, @idCliente = 456, @prodsId = @tablaProds
 --intentamos insertar productos que no existen
 declare @tablaProds tablaProductosIdCant
 insert into @tablaProds
 values(-1,2),(2,2)
-exec ventas.insertarFactura @idFactura = '980-23-2932',@tipoFactura = 'A',@empleadoLeg = 257020, @ciudadCliente = 'San Justo', @genero = 'Female', @tipoCliente = 'Normal', @prodsId = @tablaProds
+exec ventas.insertarFactura @idFactura = '980-23-2932',@tipoFactura = 'A',@empleadoLeg = 257020, @idCliente = 1, @prodsId = @tablaProds
 
---Nota: hay que agregar mas casos de prueba, pero ya es tarde asi que voy a probar que sirve en el caso valido
+--Probamos insertar una factura valida
 declare @tablaProds tablaProductosIdCant
 insert into @tablaProds
 values(1,2),(2,2)
-exec ventas.insertarFactura @idFactura = '980-23-2932',@tipoFactura = 'A',@empleadoLeg = 257020, @ciudadCliente = 'San Justo', @genero = 'Female', @tipoCliente = 'Normal', @prodsId = @tablaProds
+exec ventas.insertarFactura @idFactura = '980-23-2932',@tipoFactura = 'A',@empleadoLeg = 257020, @idCliente = 1, @prodsId = @tablaProds
 --vemos que efectivamente se inserto
 select * from ventas.factura
 where idFactura='980-23-2932'
@@ -247,7 +247,7 @@ where f.idFactura='980-23-2932'
 declare @tablaProds tablaProductosIdCant
 insert into @tablaProds
 values(6436,1)
-exec ventas.insertarFactura @idFactura = '239-12-1291',@tipoFactura = 'A',@empleadoLeg = 257020, @ciudadCliente = 'San Justo', @genero = 'Female', @tipoCliente = 'Normal', @prodsId = @tablaProds
+exec ventas.insertarFactura @idFactura = '239-12-1291',@tipoFactura = 'A',@empleadoLeg = 257020, @idCliente = 1, @prodsId = @tablaProds
 
 --vemos las lineas de factura
 select lf.id,lf.idFactura,lf.idProd,p.nombre,lf.precioUn,p.precioUSD,lf.cantidad,lf.subtotal from ventas.LineaDeFactura lf

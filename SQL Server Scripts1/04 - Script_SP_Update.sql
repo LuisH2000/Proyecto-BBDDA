@@ -7,7 +7,6 @@ Bases de Datos Aplicadas
 Alumnos:
 	- Diaz, Nicolas 41714473
 	- Huang, Luis 43098142
-	- Rolleri Vilalba, Santino 46026386
 
 **ENUNCIADO**
 Genere store procedures para manejar la inserción, modificado, borrado (si corresponde, 
@@ -1074,6 +1073,7 @@ end
 go
 	--cantxun?
 --PERTENECEA
+--CLIENTE
 --FACTURA , creo que no cambiamos nada
 --LINEA DE FACTURA
 --COMPROBANTE, creo que no cambiamos nada

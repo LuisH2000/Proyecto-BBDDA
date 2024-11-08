@@ -7,7 +7,6 @@ Bases de Datos Aplicadas
 Alumnos:
 	- Diaz, Nicolas 41714473
 	- Huang, Luis 43098142
-	- Rolleri Vilalba, Santino 46026386
 
 **ENUNCIADO**
 Cuando un cliente reclama la devolución de un producto se genera una nota de crédito por el 

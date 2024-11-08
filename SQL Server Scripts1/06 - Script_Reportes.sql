@@ -7,7 +7,6 @@ Bases de Datos Aplicadas
 Alumnos:
 	- Diaz, Nicolas 41714473
 	- Huang, Luis 43098142
-	- Rolleri Vilalba, Santino 46026386
 
 **ENUNCIADO**
 Reportes: 
@@ -377,8 +376,7 @@ begin
 		f.fecha as Fecha,
 		f.hora as Hora,
 		f.empleadoLeg as Legajo_Empleado,
-		f.ciudadCliente as Ciudad_Cliente,
-		f.genero as Genero,
+		f.idCliente as Cliente,
 		t.total as Total,
 		sum(t.total) over (partition by e.idSucursal) as Acumulado_Ventas
 	from ventas.Factura f 

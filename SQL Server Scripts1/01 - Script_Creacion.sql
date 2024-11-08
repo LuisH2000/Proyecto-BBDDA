@@ -7,7 +7,6 @@ Bases de Datos Aplicadas
 Alumnos:
 	- Diaz, Nicolas 41714473
 	- Huang, Luis 43098142
-	- Rolleri Vilalba, Santino 46026386
 
 **ENUNCIADO**
 Luego de decidirse por un motor de base de datos relacional, llegó el momento de generar la 
@@ -99,7 +98,7 @@ begin
 		direccion varchar(100),
 		horario varchar(50),
 		telefono char(9),
-		activo int default 1
+		activo bit default 1
 		constraint unique_sucursal UNIQUE (ciudad, direccion)
 	)
 end
@@ -187,7 +186,7 @@ begin
 		cargo int,
 		idSucursal int,
 		turno varchar(20) check(turno in ('TM', 'TT', 'Jornada Completa')),
-		activo int default 1,
+		activo bit default 1,
 		constraint FK_Cargo foreign key (cargo) references recursosHumanos.Cargo(id),
 		constraint FK_Surcursal foreign key (idSucursal) references sucursales.Sucursal(id)
 	)
@@ -205,6 +204,21 @@ begin
 end
 
 if not exists (select * from information_schema.tables where
+	table_schema = 'clientes' and table_name = 'Cliente')
+begin
+	create table clientes.Cliente
+	(
+		id int identity(1,1) primary key,
+		idTipo int,
+		nombre varchar(50),
+		apellido varchar(50),
+		ciudad varchar(20),
+		genero char(6) check(genero in ('Male', 'Female')),
+		constraint FK_TipoCliente foreign key (idTipo) references clientes.TipoCliente(id)
+	)
+end
+
+if not exists (select * from information_schema.tables where
 	table_schema = 'ventas' and table_name = 'Factura')
 begin
 	create table ventas.Factura
@@ -215,12 +229,10 @@ begin
 		fecha date,
 		hora time,
 		empleadoLeg int,
-		ciudadCliente varchar(20),
-		genero char(6) check(genero in ('Male', 'Female')),
-		idTipoCliente int,
+		idCliente int,
 		estado char(6) default 'Impaga' check(estado in ('Pagada', 'Impaga')),
 		constraint FK_Empleado foreign key (empleadoLeg) references recursosHumanos.Empleado(legajo),
-		constraint FK_TipoCliente foreign key (idTipoCliente) references clientes.TipoCliente(id)
+		constraint FK_Cliente foreign key (idCliente) references clientes.Cliente(id)
 	)
 end
 go
@@ -249,7 +261,7 @@ begin
 		id int identity(1,1) primary key,
 		nombreIng varchar(11) unique,
 		nombreEsp varchar(22) unique,
-		activo int default 1
+		activo bit default 1
 	)
 end
 go
@@ -273,16 +285,3 @@ begin
 end
 go
 
-/*
-		DUDAS:
-		consultas por que no puedo obtener el subtotal multiplicando precio * cantidad cuando importamos las ventas, 
-		porque hago los cast en la tabla temporal pero al multiplicar me dice que son varchar
-
-		al importar el archivo catalogo.csv, si importo la fecha con varchar y despues hago el cast a smalldatetime me 
-		dice que no se puede porque se va del rango, pero si en la tabla temporal ya es smalldatetime 
-		lo importa perfectamente
-
-		al importar los empleados, si en la tabla temporal, el dni es un varchar, lo importa con notacion cientifica por 
-		lo que no puedo castearlo a int, si lo casteo a float y despues a int, el numero se trunca. Si en la tabla temporal 
-		el dni es int, se importa perfectamente
-*/
