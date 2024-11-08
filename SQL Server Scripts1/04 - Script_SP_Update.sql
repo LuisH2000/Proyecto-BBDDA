@@ -864,7 +864,7 @@ begin
 	update catalogo.Producto set activo = 1 where id = @idProd
 end
 go
---nico
+
 create or alter proc catalogo.modificarCategoriaDeProducto
 @idProd int,
 @idCatNvo int
@@ -923,6 +923,40 @@ begin
 end
 go
 
+create or alter proc catalogo.aumentarPrecioUSDProductoPorCategoria
+@idCategoria int,
+@porcentaje int
+as
+begin
+	declare @error varchar(max)=''
+	declare @mult decimal(5,4)
+	if @idCategoria is null
+		set @error=@error+'No se ingreso un id de categoria.'+char(13)+char(10)
+	else if not exists(select 1 from catalogo.categoria where id=@idCategoria)
+		set @error=@error+'El id de categoria ingresado no existe.'+char(13)+char(10)
+	if @porcentaje is null
+		set @error=@error+'No se ingreso un porcentaje de aumento.'+char(13)+char(10)
+	else if @porcentaje<=0
+		set @error=@error+'El porcentaje debe ser mayor que 0.'+char(13)+char(10)
+	if @error<>''
+	begin
+		raiserror(@error,16,1)
+		return
+	end
+	set @mult=1+@porcentaje/100.0;
+	with productosDeLaCategoria (idProd)
+	as
+	(select p.id from catalogo.Producto p
+	inner join catalogo.PerteneceA pa
+	on p.id=pa.idProd
+	where pa.idCategoria=@idCategoria)
+	update catalogo.Producto
+	set precioUSD=precioUSD*@mult
+	where id in (select idProd from productosDeLaCategoria)
+	and precioUSD is not null
+end
+go
+
 create or alter proc catalogo.reducirPrecioProductoPorCategoria
 @idCategoria int,
 @porcentaje int
@@ -955,6 +989,41 @@ begin
 	where id in (select idProd from productosDeLaCategoria)
 end
 go
+
+create or alter proc catalogo.reducirPrecioUSDProductoPorCategoria
+@idCategoria int,
+@porcentaje int
+as
+begin
+	declare @error varchar(max)=''
+	declare @mult decimal(5,4)
+	if @idCategoria is null
+		set @error=@error+'No se ingreso un id de categoria.'+char(13)+char(10)
+	else if not exists(select 1 from catalogo.categoria where id=@idCategoria)
+		set @error=@error+'El id de categoria ingresado no existe.'+char(13)+char(10)
+	if @porcentaje is null
+		set @error=@error+'No se ingreso un porcentaje de aumento.'+char(13)+char(10)
+	else if @porcentaje<=0 or @porcentaje>=100
+		set @error=@error+'El porcentaje debe estar entre 0 y 100 (sin incluir estos).'+char(13)+char(10)
+	if @error<>''
+	begin
+		raiserror(@error,16,1)
+		return
+	end
+	set @mult=@porcentaje/100.0;
+	with productosDeLaCategoria (idProd)
+	as
+	(select p.id from catalogo.Producto p
+	inner join catalogo.PerteneceA pa
+	on p.id=pa.idProd
+	where pa.idCategoria=@idCategoria)
+	update catalogo.Producto
+	set precioUSD=precioUSD-precioUSD*@mult
+	where id in (select idProd from productosDeLaCategoria)
+	and precioUSD is not null
+end
+go
+
 
 create or alter proc catalogo.modificarNombreProducto
 @idProducto int,

@@ -545,6 +545,33 @@ where c.id=1
 --deshacemos el update con rollback
 rollback
 
+--AUMENTAR PRECIO USD DE PRODUCTO CON PORCENTAJE POR CATEGORIA (siempre que el producto tenga el precio en USD, si no lo tiene lo ignora)
+--intentamos ingresar un porcentaje y id de categoria nulos
+exec catalogo.aumentarPrecioUSDProductoPorCategoria null,null
+--ahora una categoria que existe pero porcentaje 0
+exec catalogo.aumentarPrecioUSDProductoPorCategoria 1,0
+
+--ahora intentemos un caso valido, para esto ejecutamos la transaccion completa
+begin transaction
+select top 5 p.id,p.nombre,p.precioUSD,c.categoria from catalogo.Producto p
+inner join catalogo.PerteneceA pa
+on p.id=pa.idProd
+inner join catalogo.categoria c
+on c.id=pa.idCategoria
+where precioUSD is not null
+--ejecutamos el sp
+exec catalogo.aumentarPrecioUSDProductoPorCategoria 149,100 --aumentamos el precio un 100% (duplicamos), 149 es la categoria electronica
+
+--vemos el aumento
+select top 5 p.id,p.nombre,p.precioUSD,c.categoria from catalogo.Producto p
+inner join catalogo.PerteneceA pa
+on p.id=pa.idProd
+inner join catalogo.categoria c
+on c.id=pa.idCategoria
+where precioUSD is not null
+--deshacemos el update con rollback
+rollback
+
 --REDUCIR PRECIO DE PRODUCTO CON PORCENTAJE POR CATEGORIA
 --intentamos ingresar un porcentaje y categoria nulos
 exec catalogo.reducirPrecioProductoPorCategoria null,null
@@ -570,6 +597,34 @@ on p.id=pa.idProd
 inner join catalogo.categoria c
 on c.id=pa.idCategoria
 where c.id=1
+--deshacemos el update con rollback
+rollback
+
+--REDUCIR PRECIO USD DE PRODUCTO CON PORCENTAJE POR CATEGORIA
+--intentamos ingresar un porcentaje y categoria nulos
+exec catalogo.reducirPrecioUSDProductoPorCategoria null,null
+--ahora una categoria que existe pero porcentaje 0
+exec catalogo.reducirPrecioUSDProductoPorCategoria 1,0
+--ahora lo mismo pero con un porcentaje mayor a 100
+exec catalogo.reducirPrecioUSDProductoPorCategoria 1,100
+
+--ahora un caso valido, para esto ejecutamos la transaccion completa
+begin transaction
+select top 5 p.id,p.nombre,p.precioUSD,c.categoria from catalogo.Producto p
+inner join catalogo.PerteneceA pa
+on p.id=pa.idProd
+inner join catalogo.categoria c
+on c.id=pa.idCategoria
+where precioUSD is not null
+--ejecutamos el sp
+exec catalogo.reducirPrecioUSDProductoPorCategoria 149,50 --reducimos el precio a la mitad (50% de descuento) (149 es el id de la categoria tecnologia)
+--vemos el aumento
+select top 5 p.id,p.nombre,p.precioUSD,c.categoria from catalogo.Producto p
+inner join catalogo.PerteneceA pa
+on p.id=pa.idProd
+inner join catalogo.categoria c
+on c.id=pa.idCategoria
+where precioUSD is not null
 --deshacemos el update con rollback
 rollback
 
