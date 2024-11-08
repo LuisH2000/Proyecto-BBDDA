@@ -172,6 +172,7 @@ begin
 	set activo = 0
 	where id = @idMp
 end
+
 --TIPOCLIENTE
 --FACTURA
 --LINEAFACTURA

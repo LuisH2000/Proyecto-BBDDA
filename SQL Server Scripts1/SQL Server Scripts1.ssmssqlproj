@@ -28,11 +28,11 @@
           <AssociatedConnUserName />
           <FullPath>01 - Script_Creacion.sql</FullPath>
         </FileNode>
-        <FileNode Name="02 - API-Dolar.sql">
+        <FileNode Name="02 - Script_API-Dolar.sql">
           <AssociatedConnectionMoniker>8c91a03d-f9b4-46c0-a305-b5dcc79ff907:DESKTOP-K2ACL7T\SQLEXPRESS:True</AssociatedConnectionMoniker>
           <AssociatedConnSrvName>DESKTOP-K2ACL7T\SQLEXPRESS</AssociatedConnSrvName>
           <AssociatedConnUserName />
-          <FullPath>02 - API-Dolar.sql</FullPath>
+          <FullPath>02 - Script_API-Dolar.sql</FullPath>
         </FileNode>
         <FileNode Name="02 - Script_Importar_Archivos.sql">
           <AssociatedConnectionMoniker>8c91a03d-f9b4-46c0-a305-b5dcc79ff907:DESKTOP-K2ACL7T\SQLEXPRESS:True</AssociatedConnectionMoniker>
@@ -64,17 +64,17 @@
           <AssociatedConnUserName />
           <FullPath>06 - Script_Reportes.sql</FullPath>
         </FileNode>
-        <FileNode Name="07 - Encriptar_Datos_Empleados.sql">
+        <FileNode Name="07 - Script_Encriptar_Datos_Empleados.sql">
           <AssociatedConnectionMoniker>8c91a03d-f9b4-46c0-a305-b5dcc79ff907:DESKTOP-K2ACL7T\SQLEXPRESS:True</AssociatedConnectionMoniker>
           <AssociatedConnSrvName>DESKTOP-K2ACL7T\SQLEXPRESS</AssociatedConnSrvName>
           <AssociatedConnUserName />
-          <FullPath>07 - Encriptar_Datos_Empleados.sql</FullPath>
+          <FullPath>07 - Script_Encriptar_Datos_Empleados.sql</FullPath>
         </FileNode>
-        <FileNode Name="08 - SP_Generar_Nota_de_Credito.sql">
+        <FileNode Name="08 - Script_Generar_Nota_de_Credito.sql">
           <AssociatedConnectionMoniker>8c91a03d-f9b4-46c0-a305-b5dcc79ff907:DESKTOP-K2ACL7T\SQLEXPRESS:True</AssociatedConnectionMoniker>
           <AssociatedConnSrvName>DESKTOP-K2ACL7T\SQLEXPRESS</AssociatedConnSrvName>
           <AssociatedConnUserName />
-          <FullPath>08 - SP_Generar_Nota_de_Credito.sql</FullPath>
+          <FullPath>08 - Script_Generar_Nota_de_Credito.sql</FullPath>
         </FileNode>
         <FileNode Name="09 - Script_Roles.sql">
           <AssociatedConnectionMoniker>8c91a03d-f9b4-46c0-a305-b5dcc79ff907:DESKTOP-K2ACL7T\SQLEXPRESS:True</AssociatedConnectionMoniker>
@@ -106,11 +106,11 @@
           <AssociatedConnUserName />
           <FullPath>13 - Test_Update.sql</FullPath>
         </FileNode>
-        <FileNode Name="14 - Test_Informes.sql">
+        <FileNode Name="14 - Test_Reportes.sql">
           <AssociatedConnectionMoniker>8c91a03d-f9b4-46c0-a305-b5dcc79ff907:DESKTOP-K2ACL7T\SQLEXPRESS:True</AssociatedConnectionMoniker>
           <AssociatedConnSrvName>DESKTOP-K2ACL7T\SQLEXPRESS</AssociatedConnSrvName>
           <AssociatedConnUserName />
-          <FullPath>14 - Test_Informes.sql</FullPath>
+          <FullPath>14 - Test_Reportes.sql</FullPath>
         </FileNode>
         <FileNode Name="15 - Test_Nota_de_Credito.sql">
           <AssociatedConnectionMoniker>8c91a03d-f9b4-46c0-a305-b5dcc79ff907:DESKTOP-K2ACL7T\SQLEXPRESS:True</AssociatedConnectionMoniker>

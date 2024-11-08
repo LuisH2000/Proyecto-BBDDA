@@ -274,23 +274,6 @@ end
 go
 
 /*
-	Verificar en los sp de abm que no nos pasen parametros vacios como '   '
-
-	crear sp para crear una nota de credito
-
-	abm 
-		sucursal, 
-		lineaproducto, 
-		producto (al agregar un producto, asegurarse de insertar a que categoria pertenece en PerteneceA), 
-		categoria (al agregar una categoria, vincular a la LineaProducto que pertenece), 
-		cargo, 
-		empleado, 
-		tipoCliente, 
-		factura (crear un sp que reciba una tabla con los productos a agregar a las lineadefactura,
-				verificar si el producto es electronica para calcular el precio con la API del dolar),
-		comprobante,
-		mediodepago
-
 		DUDAS:
 		consultas por que no puedo obtener el subtotal multiplicando precio * cantidad cuando importamos las ventas, 
 		porque hago los cast en la tabla temporal pero al multiplicar me dice que son varchar
@@ -302,20 +285,4 @@ go
 		al importar los empleados, si en la tabla temporal, el dni es un varchar, lo importa con notacion cientifica por 
 		lo que no puedo castearlo a int, si lo casteo a float y despues a int, el numero se trunca. Si en la tabla temporal 
 		el dni es int, se importa perfectamente
-
-		de los informes, hay un informe que dice:
-		Trimestral: mostrar el total facturado por turnos de trabajo por mes.
-		el procedure debe recibir algo? el trimestre y el anio?
-		y mostrar el total facturado por turnos de trabajo para cada mes en ese trimestre
-*/
-
-/*
-if not exists (
-    select 1 
-    from sys.indexes 
-    where name = 'IX_FacturaID' AND object_id = object_id('ventas.Factura')
-)
-begin
-    create index IX_FacturaID on ventas.Venta (idFactura);
-end
 */

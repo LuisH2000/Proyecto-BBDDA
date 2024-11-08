@@ -38,7 +38,7 @@ as
 begin
 	declare @error varchar(200)
 	set @error = ''
-	if @mes <= 0 or @mes is null
+	if @mes <= 0 or @mes > 12 or @mes is null
 	begin
 		set @error = @error + 'El mes ingresado no es valido' + char(13) + char(10)
 	end
@@ -141,6 +141,10 @@ begin
 	begin
 		set @error = @error + 'La fecha de fin no es valida' + char(13) + char(10)
 	end
+	if @fechaFin is not null and @fechaInicio is not null
+		if datediff(day, @fechaInicio, @fechaFin) < 0
+			set @error = @error + 'La fecha de fin es menor a la fecha de inicio' + char(13) + char(10)
+
 	if @error <> ''
 	begin
 		raiserror(@error, 16, 1)
@@ -170,8 +174,8 @@ la cantidad de productos vendidos en ese rango por sucursal, ordenado de mayor a
 menor. 
 */
 create or alter proc reportes.reporteProductosPorSucursal
-    @FechaInicio date,
-    @FechaFin date
+    @fechaInicio date,
+    @fechaFin date
 as
 begin
 	declare @error varchar(100)
@@ -184,6 +188,9 @@ begin
 	begin
 		set @error = @error + 'La fecha de fin no es valida' + char(13) + char(10)
 	end
+	if @fechaFin is not null and @fechaInicio is not null
+		if datediff(day, @fechaInicio, @fechaFin) < 0
+			set @error = @error + 'La fecha de fin es menor a la fecha de inicio' + char(13) + char(10)
 	if @error <> ''
 	begin
 		raiserror(@error, 16, 1)
@@ -223,7 +230,7 @@ begin
     begin
         set @error = @error + 'El año ingresado no es válido' + char(13) + char(10)
     end
-    if @mes <= 0 OR @mes > 12 OR @mes IS NULL
+    if @mes <= 0 or @mes > 12 or @mes is null
     begin
         set @error = @error + 'El mes ingresado no es válido' + char(13) + char(10)
     end
@@ -239,16 +246,15 @@ begin
         select 
             p.id,
             p.nombre,
-			DATEPART(WEEK, f.fecha) - DATEPART(WEEK, DATEADD(MONTH, DATEDIFF(MONTH, 0, f.fecha), 0)) + 1 AS semana,
-            --datepart(week, f.fecha) as semana,
+			datepart(week, f.fecha) - datepart(week, dateadd(month, datediff(month, 0, f.fecha), 0)) + 1 as semana,
             sum(l.cantidad) as total
         from ventas.Factura f
 			join ventas.LineaDeFactura l on l.idFactura = f.id
 			join catalogo.Producto p on p.id = l.idProd
         where year(f.fecha) = @anio and month(f.fecha) = @mes
-        group by p.id, p.nombre, DATEPART(WEEK, f.fecha) - DATEPART(WEEK, DATEADD(MONTH, DATEDIFF(MONTH, 0, f.fecha), 0)) + 1
+        group by p.id, p.nombre, datepart(week, f.fecha) - datepart(week, dateadd(month, datediff(month, 0, f.fecha), 0)) + 1
     ),
-    -- CTE para clasificar y filtrar los 5 productos más vendidos por semana
+    -- CTE para ordenar los productos segun el total vendido por semana
     top5Productos as (
         select 
             id,
@@ -291,7 +297,7 @@ begin
     begin
         set @error = @error + 'El año ingresado no es válido' + char(13) + char(10)
     end
-    if @mes <= 0 OR @mes > 12 OR @mes IS NULL
+    if @mes <= 0 or @mes > 12 or @mes is null
     begin
         set @error = @error + 'El mes ingresado no es válido' + char(13) + char(10)
     end
@@ -314,7 +320,7 @@ begin
         where year(f.fecha) = @anio and month(f.fecha) = @mes
         group by p.id, p.nombre
     ),
-    -- CTE para clasificar y filtrar los 5 productos menos vendidos
+    -- CTE para ordernar los productos segun sus ventas de forma ascendente
     top5Productos as (
         select 
             id,
@@ -340,6 +346,7 @@ begin
     for xml path('Mes'), root('ReporteTop5Productos');
 end;
 go
+
 --Mostrar total acumulado de ventas (o sea tambien mostrar el detalle) para una fecha 
 --y sucursal particulares 
 create or alter proc reportes.totalAcumuladoFechaSucursal

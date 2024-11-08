@@ -18,6 +18,8 @@ exec reportes.reporteTrimestralPorTurno 1,2019
 --***Reporte de cantidad de productos vendidos en el rango de fechas***
 --Probamos generar el reporte con fechas invalidas, esperamos un mensaje de error
 exec reportes.reporteProductosVendidos null, null
+--Probamos generar el reporte donde la fecha de fin es menor que la fecha de inicio
+exec reportes.reporteProductosVendidos '2019-01-20', '2019-01-02'
 --Generamos el reporte de la cantidad de productos vendidos en el rango de fechas
 --de mayor a menor
 exec reportes.reporteProductosVendidos '2019-01-01', '2019-01-02'
@@ -25,6 +27,8 @@ exec reportes.reporteProductosVendidos '2019-01-01', '2019-01-02'
 --***Reporte de cantidad de productos vendidos en el rango de fechas
 --Probamos generar el reporte con fechas invalidas, esperamos un mensaje de error
 exec reportes.reporteProductosVendidos null, null
+--Probamos generar el reporte donde la fecha de fin es menor que la fecha de inicio
+exec reportes.reporteProductosVendidos '2019-01-20', '2019-01-02'
 --Generamos el reporte de la cantidad de productos vendidos en el rango de fechas
 --de mayor a menor
 exec reportes.reporteProductosVendidos '2019-01-01', '2019-01-02'
@@ -32,6 +36,8 @@ exec reportes.reporteProductosVendidos '2019-01-01', '2019-01-02'
 --***Reporte de cantidad de productos vendidos por sucursales en un rango de fechas***
 --Probamos generar el reporte con fechas invalidas, esperamos un mensaje de error
 exec reportes.reporteProductosPorSucursal null, null
+--Probamos generar el reporte donde la fecha de fin es menor que la fecha de inicio
+exec reportes.reporteProductosPorSucursal '2019-01-20', '2019-01-02'
 --Generamos el reporte de cantidad de productos vendidos por sucursales en un rango
 --de fechas de mayor a menor
 exec reportes.reporteProductosPorSucursal '2019-01-01', '2019-01-02'
