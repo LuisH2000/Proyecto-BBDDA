@@ -29,17 +29,19 @@ exec recursosHumanos.eliminarCargoId 1
 --Eliminar un cargo sin empleados
 insert into recursosHumanos.Cargo values('Manager')
 select * from recursosHumanos.Cargo
-exec recursosHumanos.eliminarCargo 4
+exec recursosHumanos.eliminarCargoId 4
 
 --LINEAPRODUCTO
 --Eliminar linea de producto que no existe
 exec catalogo.eliminarLineaProductoId -1
 --Eliminar linea de producto con categoria con esa linea
 exec catalogo.eliminarLineaProductoId 1
---Eliminar una linea de producto sin categoria
+--Eliminar una linea de producto sin categoria, insertamos una nueva linea de producto
 insert into catalogo.LineaProducto values('Fantasia')
-select * from catalogo.LineaProducto
+select * from catalogo.LineaProducto where lineaProd = 'Fantasia'
+--Lo eliminamos
 exec catalogo.eliminarLineaProductoId 13
+select * from catalogo.LineaProducto where lineaProd = 'Fantasia'
 
 --PRODUCTO
 --Dar de baja producto que no existe
@@ -56,9 +58,10 @@ update catalogo.Producto set activo = 1 where id = 1
 exec catalogo.eliminarCategoriaId -1
 --Eliminar categoria con productos con esa categoria
 exec catalogo.eliminarCategoriaId 1
---Eliminar categoria sin productos con esa categoria
+--Eliminar categoria sin productos con esa categoria, insertamos una categoria nueva
 insert into catalogo.Categoria(categoria, idLineaProd) values('Peluches', 1)
 select * from catalogo.Categoria where categoria = 'Peluches'
+--Eliminamos la categoria insertada
 exec catalogo.eliminarCategoriaId 158
 select * from catalogo.Categoria where categoria = 'Peluches'
 
@@ -70,6 +73,7 @@ select * from catalogo.PerteneceA where idProd = 1
 exec catalogo.eliminarProductoDeUnaCategoria @idProd = 1, @idCat = 1
 --Eliminar la categoria a la que pertenece un producto
 exec catalogo.eliminarProductoDeUnaCategoria @idProd = 1, @idCat = 90
+select * from catalogo.PerteneceA where idProd = 1
 
 insert into catalogo.PerteneceA(idCategoria, idProd) values(90,1)
 

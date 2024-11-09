@@ -58,7 +58,7 @@ begin
 		set @error = @error + 'El cargo ingresado no existe' + char(13) + char(10)
 	else
 		if exists (select 1 from recursosHumanos.Empleado where cargo = @idCargo)
-			set @error = @error + 'Existe empleados con este cargo, modificar el cargo de estos' + char(13) + char(10)
+			set @error = @error + 'Existen empleados con este cargo, modificar el cargo de estos' + char(13) + char(10)
 	
 	if @error <> ''
 	begin

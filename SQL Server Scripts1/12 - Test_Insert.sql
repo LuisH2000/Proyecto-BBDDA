@@ -12,8 +12,10 @@ exec sucursales.insertarSucursal 'La Matanza', 'AV. Don Bosco', 'L a V: 8 - 20, 
 exec sucursales.insertarSucursal 'San Justo', 'Av. Brig. Gral. Juan Manuel de Rosas 3634, B1754 San Justo, Provincia de Buenos Aires', 'L a V: 8 - 20, S y D: 10 - 20', '1111-1111'
 -- Probamos una direccion que existe pero en otra ciudad
 exec sucursales.insertarSucursal 'La Matanza', 'Av. Brig. Gral. Juan Manuel de Rosas 3634, B1754 San Justo, Provincia de Buenos Aires', 'L a V: 8 - 20, S y D: 10 - 20', '1111-1111'
+--Vemos que se haya insertado
 select * from sucursales.Sucursal
-
+--Borramos la sucursal insertada
+delete from sucursales.Sucursal where id = 4
 
 --***EMPLEADO***
 --SP para ingresar empleado en una sucursal donde la sucursal se determina por ciudad y direccion de la misma

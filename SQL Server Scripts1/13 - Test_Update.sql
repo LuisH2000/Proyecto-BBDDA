@@ -6,9 +6,10 @@ go
 --Probamos con una sucursal que no existe
 exec sucursales.darAltaSucursalEnBaja -1
 --Damos de alta una sucursal de baja
-select * from sucursales.Sucursal where id = 1
 update sucursales.Sucursal set activo = 0 where id = 1
+select * from sucursales.Sucursal where id = 1
 exec sucursales.darAltaSucursalEnBaja 1
+select * from sucursales.Sucursal where id = 1
 
 --MODIFICAR DIRECCION
 --Probamos con una sucursal que no existe
@@ -507,14 +508,24 @@ declare @idProd int
 declare @nuevaCat int
 declare @oriCat int
 set @idProd=(select top 1 id from catalogo.producto)
-set @oriCat=(select c.id from catalogo.Categoria c inner join catalogo.PerteneceA a on c.id=a.idCategoria where a.idProd=@idProd)
+set @oriCat=(select c.id from catalogo.Categoria c 
+			inner join catalogo.PerteneceA a on c.id=a.idCategoria where a.idProd=@idProd)
 set @nuevaCat=(select top 1 id from catalogo.Categoria where id<>@oriCat)
-select p.id, p.nombre, c.categoria,lp.lineaProd from catalogo.Producto p inner join catalogo.PerteneceA pa on p.id=pa.idProd inner join
-catalogo.categoria c on c.id=pa.idCategoria inner join catalogo.LineaProducto lp on lp.id=c.idLineaProd where p.id=@idProd
+
+select p.id, p.nombre, c.categoria,lp.lineaProd 
+from catalogo.Producto p 
+	inner join catalogo.PerteneceA pa on p.id=pa.idProd 
+	inner join catalogo.categoria c on c.id=pa.idCategoria 
+	inner join catalogo.LineaProducto lp on lp.id=c.idLineaProd where p.id=@idProd
 exec catalogo.modificarCategoriaDeProducto @idProd,@nuevaCat --cambiamos la categoria usando el sp
-select p.id, p.nombre, c.categoria,lp.lineaProd from catalogo.Producto p inner join catalogo.PerteneceA pa on p.id=pa.idProd inner join
-catalogo.categoria c on c.id=pa.idCategoria inner join catalogo.LineaProducto lp on lp.id=c.idLineaProd where p.id=@idProd
+
+select p.id, p.nombre, c.categoria,lp.lineaProd 
+from catalogo.Producto p 
+	inner join catalogo.PerteneceA pa on p.id=pa.idProd 
+	inner join catalogo.categoria c on c.id=pa.idCategoria 
+	inner join catalogo.LineaProducto lp on lp.id=c.idLineaProd where p.id=@idProd
 exec catalogo.modificarCategoriaDeProducto @idProd,@oriCat --restauramos la categoria tambien usando el sp
+
 select p.id, p.nombre, c.categoria,lp.lineaProd from catalogo.Producto p inner join catalogo.PerteneceA pa on p.id=pa.idProd inner join
 catalogo.categoria c on c.id=pa.idCategoria inner join catalogo.LineaProducto lp on lp.id=c.idLineaProd where p.id=@idProd
 --nota que si modificas la categoria de un producto, su linea de producto tambien cambia (ya que la categoria se asocia a una lp especifica)
