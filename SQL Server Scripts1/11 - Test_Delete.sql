@@ -86,3 +86,28 @@ exec comprobantes.bajaMedioPagoId 1
 select * from comprobantes.MedioDePago where id = 1
 
 update comprobantes.MedioDePago set activo = 1 where id = 1
+
+--CLIENTE
+--borrar un tipo de cliente (para la prueba lo usaremos en conjunto con clientes.cambiarClientesDeUnTipoAOtro ya que 
+--para borrar un tipo de cliente ningun cliente debe pertenecer al mismo, para esto primero migraremos los clientes que pertenecen al tipo que 
+--va a ser borrado y luego borraremos el tipo) 
+--primero probamos un caso no valido pasando null
+exec clientes.borrarTipoDeCliente null
+--ahora pasemos un tipo de cliente que no existe
+exec clientes.borrarTipoDeCliente 34323
+--ahora intentamos borrar un tipo que aun tiene clientes asociados
+exec clientes.borrarTipoDeCliente 1
+
+--ahora un caso valido donde borramos el tipo de cliente con id 1 (ejecutar transaccion completa)
+begin transaction
+--vemos los tipos de cliente que existen
+select * from clientes.TipoCliente
+--migramos los clientes del tipo id 1 a otro tipo (2)
+exec clientes.cambiarClientesDeUnTipoAOtro 1,2
+--borramos el tipo de cliente 1
+exec clientes.borrarTipoDeCliente 1
+--vemos que se borro
+select * from clientes.TipoCliente
+--restauramos los datos a como estaban antes
+rollback
+

@@ -667,3 +667,129 @@ exec catalogo.modificarProveedorProducto 1,'Kwik-E-Mart'
 select id,nombre,precio,proveedor from catalogo.producto where id=1
 --deshacemos los cambios
 rollback
+
+--**CLIENTE**
+--CAMBIAR TIPO DE CLIENTE DE UN CLIENTE
+--probamos con datos nulos
+exec clientes.cambiarTipoCliente null,null
+--ahora probamos con un cliente que no existe y un tipo de cliente que no existe
+exec clientes.cambiarTipoCliente 293902,39293
+--ahora con un caso valido (ejecutar transaccion completa)
+begin transaction
+declare @idCli int
+set @idCli=(select top 1 id from clientes.cliente where idTipo<>2)
+--vemos que el cliente es del tipo 1
+select c.id,c.ciudad,c.genero,tc.id,tc.tipo from clientes.cliente c inner join clientes.TipoCliente tc on c.idTipo=tc.id where c.id=@idCli
+exec clientes.cambiarTipoCliente @idCli,2
+--vemos que se modifico
+select c.id,c.ciudad,c.genero,tc.id,tc.tipo from clientes.cliente c inner join clientes.TipoCliente tc on c.idTipo=tc.id where c.id=@idCli
+--restauramos el  estado original
+rollback
+
+
+--Cambiar un grupo de clientes pertenecientes a un tipo a otro tipo nuevo (pensado para ser usado en conjunto con clientes.clientes.borrarTipoDeCliente)
+--probamos con datos nulos para ver que no se puede
+exec clientes.cambiarClientesDeUnTipoAOtro null,null
+--ahora con tipos de cliente que no existen
+exec clientes.cambiarClientesDeUnTipoAOtro 1932902,29392
+--ahora un caso valido donde vamos a pasar todos los clientes de un tipo a otro
+begin transaction
+declare @idTipoNvo int
+declare @idTipoViejo int
+set @idTipoViejo=(select top 1 id from clientes.TipoCliente)
+set @idTipoNvo=(select top 1 id from clientes.TipoCliente where id<>@idTipoViejo)
+--vemos cuantos clientes del tipo actual hay
+select count(1) as cantClientesTipoViejo from clientes.cliente where idTipo=@idTipoViejo
+--los cambiamos a la clase nueva
+exec clientes.cambiarClientesDeUnTipoAOtro @idTipoViejo,@idTipoNvo
+--vemos que se cambiaron contando cuantos clientes del tipo viejo hay
+select count(1) as cantClientesTipoViejo from clientes.cliente where idTipo=@idTipoViejo
+--restauramos los clientes a su tipo anterior
+rollback
+
+
+--CAMBIAR NOMBRE DE CLIENTE
+--probamos con datos nulos
+exec clientes.cambiarNombreCliente null,null 
+--ahora con un cliente que no existe
+exec clientes.cambiarNombreCliente 282382,'Pollito'
+--ahora con un nombre de solo espacios
+exec clientes.cambiarNombreCliente 1,'    '
+
+--ahora un caso valido donde al cliente con id 1 le cambiamos el nombre a Pollito (ejecutar transaccion completa)
+begin transaction
+--vemos el nombre que tiene ahora mismo (podria no tenerlo si corresponde a alguno de los cargados por archivo)
+select * from clientes.cliente
+where id=1
+--le ponemos el nombre nuevo
+exec clientes.cambiarNombreCliente 1,'Pollito'
+--vemos que se efecutaron los cambios
+select * from clientes.cliente
+where id=1
+--restauramos los datos
+rollback
+
+--CAMBIAR APELLIDO DE CLIENTE
+--probamos con datos nulos
+exec clientes.cambiarApellidoCliente null,null 
+--ahora con un cliente que no existe
+exec clientes.cambiarApellidoCliente 282382,'Perez'
+--ahora con un nombre de solo espacios
+exec clientes.cambiarApellidoCliente 1,'    '
+
+--ahora un caso valido donde al cliente con id 1 le cambiamos el apellido a Perez (ejecutar transaccion completa)
+begin transaction
+--vemos el apellido que tiene ahora mismo (podria no tenerlo si corresponde a alguno de los cargados por archivo)
+select * from clientes.cliente
+where id=1
+--le ponemos el apellido nuevo
+exec clientes.cambiarApellidoCliente 1,'Perez'
+--vemos que se efecutaron los cambios
+select * from clientes.cliente
+where id=1
+--restauramos los datos
+rollback
+
+--CAMBIAR CIUDAD DE CLIENTE
+--probamos con datos nulos
+exec clientes.cambiarCiudadCliente null,null 
+--ahora con un cliente que no existe
+exec clientes.cambiarCiudadCliente 282382,'Springfield'
+--ahora con un nombre de solo espacios
+exec clientes.cambiarCiudadCliente 1,'    '
+
+--ahora un caso valido donde al cliente con id 1 le cambiamos la ciudad a Springfield (ejecutar transaccion completa)
+begin transaction
+--vemos la ciudad que tiene ahora mismo
+select * from clientes.cliente
+where id=1
+--le ponemos la ciudad nueva
+exec clientes.cambiarCiudadCliente 1,'Springfield'
+--vemos que se efecutaron los cambios
+select * from clientes.cliente
+where id=1
+--restauramos los datos
+rollback
+
+--CAMBIAR GENERO DE CLIENTE
+--probamos con datos nulos
+exec clientes.cambiarGeneroCliente null,null 
+--ahora con un cliente que no existe
+exec clientes.cambiarGeneroCliente 282382,'Male'
+--ahora con un nombre de solo espacios
+exec clientes.cambiarGeneroCliente 1,'    '
+
+--ahora un caso valido donde al cliente le cambiamos el genero a male(ejecutar transaccion completa)
+begin transaction
+declare @idCli int
+set @idCli=(select top 1 id from clientes.cliente where genero<>'Male')
+--vemos el genero que tiene ahora mismo
+select * from clientes.cliente
+where id=@idCli
+--le ponemos el nombre nuevo
+exec clientes.cambiarGeneroCliente 1,'Male'
+--vemos que se efecutaron los cambios
+select * from clientes.cliente
+where id=@idCli
+--restauramos los datos
+rollback

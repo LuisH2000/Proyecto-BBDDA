@@ -337,3 +337,19 @@ declare @idFactura int = (select id from ventas.Factura where idFactura = '110-0
 select * from ventas.LineaDeFactura where idFactura = @idFactura
 exec ventas.insertarLineaDeFactura @idFactura = @idFactura, @idProd = 6436, @cantidad = 2
 
+
+--CLIENTE
+--insertar un cliente nuevo
+--intentamos insertar un cliente con todos los datos nulos
+exec clientes.insertarNuevoCliente null,null,null,null,null
+--ahora intentamos ingresar un cliente con un tipo que no existe (los validos son 1 o 2, correspondiente a normal o member)
+exec clientes.insertarNuevoCliente 3,'Pollito','Perez','Varela','Male'
+--ahora intentamos con un caso valido (ejecutar transaccion completa)
+begin transaction
+exec clientes.insertarNuevoCliente 2,'Pollito','Perez','Varela','Male'
+--vemos que se inserto
+select * from clientes.cliente
+where nombre='Pollito'
+rollback
+
+

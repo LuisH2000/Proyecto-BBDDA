@@ -664,6 +664,8 @@ begin
 end
 go
 
+
+
 --***CATEGORIA***
 create or alter proc catalogo.modificarNombreCategoria
 	@idCat int,
@@ -1074,6 +1076,153 @@ go
 	--cantxun?
 --PERTENECEA
 --CLIENTE
+--cambiar tipo de cliente de un cliente
+create or alter procedure clientes.cambiarTipoCliente
+@idCli int,
+@idTipoNvo int
+as
+begin
+	declare @error varchar(max)=''
+	--verificamos que los datos no sean nulos, que el cliente exista y que el tipo de cliente exista.
+	if @idCli is null or not exists(select 1 from clientes.cliente where id=@idCli)
+		set @error=@error+'No se ingreso un id de cliente o no existe.'+char(13)+char(10)
+	if @idTipoNvo is null or not exists(select 1 from clientes.TipoCliente where id=@idTipoNvo)
+		set @error=@error+'No se ingreso un id de tipo de cliente o no existe.'+char(13)+char(10)
+	if @error<>''
+	begin
+		raiserror(@error,16,1)
+		return
+	end
+	update clientes.Cliente
+	set idTipo=@idTipoNvo
+	where id=@idCli
+end
+go
+--pasar todos los clientes de un tipo a otro tipo (podria ser util en conjunto con clientes.borrartipodecliente en caso de que se de de baja un tipo de cliente,
+--y quieras pasar esos clientes a su nuevo tipo, ej: el tipo de cliente member se descontinua y debes pasar todos a normal)
+create or alter procedure clientes.cambiarClientesDeUnTipoAOtro
+@idTipoViejo int,
+@idTipoNvo int
+as
+begin
+	declare @error varchar(max)=''
+	--verificamos que tanto el tipo de cliente actual como el nuevo existan y no sean null.
+	if @idTipoViejo is null or not exists(select 1 from clientes.TipoCliente where id=@idTipoViejo)
+		set @error=@error+'El id de tipo de cliente actual ingresado no existe.'+char(13)+char(10)
+	if @idTipoNvo is null or not exists(select 1 from clientes.TipoCliente where id=@idTipoNvo)
+		set @error=@error+'El id de tipo de cliente nuevo ingresado no existe.'+char(13)+char(10)
+	if @error<>''
+	begin
+		raiserror(@error,16,1)
+		return
+	end
+	update clientes.Cliente
+	set idTipo=@idTipoNvo
+	where idTipo=@idTipoViejo
+end
+go
+
+--cambiar nombre de cliente
+create or alter procedure clientes.cambiarNombreCliente
+@idCli int,
+@nombreNvo varchar(50)
+as
+begin
+	declare @error varchar(max)=''
+	--normalizamos el nombre
+	set @nombreNvo=ltrim(rtrim(@nombreNvo))
+	--Verificamos que el cliente exista y que el nombre sea valido
+	if @idCli is null or not exists (select 1 from clientes.cliente where id=@idCli)
+		set @error=@error+'No se ingreso un id de cliente o no existe.'+char(13)+char(10)
+	if @nombreNvo is null or @nombreNvo=''
+		set @error=@error+'No se ingreso un nombre nuevo para el cliente.'+char(13)+char(10)
+	if @error<>''
+	begin
+		raiserror(@error,16,1)
+		return
+	end
+	update clientes.cliente
+	set nombre=@nombreNvo
+	where id=@idCli
+end
+go
+--cambiar apellido de cliente
+create or alter procedure clientes.cambiarApellidoCliente
+@idCli int,
+@apellidoNvo varchar(50)
+as
+begin
+	declare @error varchar(max)=''
+	--normalizamos el nombre
+	set @apellidoNvo=ltrim(rtrim(@apellidoNvo))
+	--Verificamos que el cliente exista y que el nombre sea valido
+	if @idCli is null or not exists (select 1 from clientes.cliente where id=@idCli)
+		set @error=@error+'No se ingreso un id de cliente o no existe.'+char(13)+char(10)
+	if @apellidoNvo is null or @apellidoNvo=''
+		set @error=@error+'No se ingreso un apellido nuevo para el cliente.'+char(13)+char(10)
+	if @error<>''
+	begin
+		raiserror(@error,16,1)
+		return
+	end
+	update clientes.cliente
+	set apellido=@apellidoNvo
+	where id=@idCli
+end
+go
+
+--cambiar ciudad de cliente
+create or alter procedure clientes.cambiarCiudadCliente
+@idCli int,
+@ciudadNva varchar(20)
+as
+begin
+	declare @error varchar(max)=''
+	--normalizamos el nombre
+	set @ciudadNva=ltrim(rtrim(@ciudadNva))
+	--Verificamos que el cliente exista y que el nombre sea valido
+	if @idCli is null or not exists (select 1 from clientes.cliente where id=@idCli)
+		set @error=@error+'No se ingreso un id de cliente o no existe.'+char(13)+char(10)
+	if @ciudadNva is null or @ciudadNva=''
+		set @error=@error+'No se ingreso una ciudad nueva para el cliente.'+char(13)+char(10)
+	if @error<>''
+	begin
+		raiserror(@error,16,1)
+		return
+	end
+	update clientes.cliente
+	set ciudad=@ciudadNva
+	where id=@idCli
+end
+go
+
+--cambiar genero de cliente
+create or alter procedure clientes.cambiarGeneroCliente
+@idCli int,
+@generoNvo char(6)
+as
+begin
+	declare @error varchar(max)=''
+	--normalizamos el nombre
+	set @generoNvo=ltrim(rtrim(@generoNvo))
+	--Verificamos que el cliente exista y que el nombre sea valido
+	if @idCli is null or not exists (select 1 from clientes.cliente where id=@idCli)
+		set @error=@error+'No se ingreso un id de cliente o no existe.'+char(13)+char(10)
+	if @generoNvo is null or @generoNvo=''
+		set @error=@error+'No se ingreso un genero nuevo para el cliente.'+char(13)+char(10)
+	else if @generoNvo not in ('Male','Female')
+		set @error=@error+'El genero debe ser Male o Female.'+char(13)+char(10)
+	if @error<>''
+	begin
+		raiserror(@error,16,1)
+		return
+	end
+	update clientes.cliente
+	set genero=@generoNvo
+	where id=@idCli
+end
+go
+
 --FACTURA , creo que no cambiamos nada
 --LINEA DE FACTURA
 --COMPROBANTE, creo que no cambiamos nada

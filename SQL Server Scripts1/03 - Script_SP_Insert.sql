@@ -713,4 +713,54 @@ begin
 			select @idFactura, @idProd, @precio, @cantidad, @precio * @cantidad
 	end
 end
+go
 -- CLIENTE
+--insertar cliente
+create or alter procedure clientes.insertarNuevoCliente
+@idTipo int, 
+@nombre varchar(50),
+@apellido varchar(50),
+@ciudad varchar (20),
+@genero char(6)
+as
+begin
+	declare @error varchar(max)=''
+	--normalizar los datos
+	set @nombre=rtrim(ltrim(@nombre))
+	set @apellido=rtrim(ltrim(@apellido))
+	set @ciudad=rtrim(ltrim(@ciudad))
+	set @genero=rtrim(ltrim(@genero))
+	--verificaciones generales
+	if @idTipo is null
+		set @error=@error+'No se inserto un id de tipo de cliente'+char(13)+char(10)
+	else if not exists (select 1 from clientes.TipoCliente where id=@idTipo)
+		set @error=@error+'El tipo de cliente ingresado no existe.'+char(13)+char(10)
+	if @nombre is null or @nombre=''
+		set @error=@error+'No se ingreso un nombre para el cliente.'+char(13)+char(10)
+	if @apellido is null or @apellido=''
+		set @error=@error+'No se ingreso un apellido para el cliente.'+char(13)+char(10)
+	if @ciudad is null or @ciudad=''
+		set @error=@error+'No se ingreso una ciudad para el cliente.'+char(13)+char(10)
+	if @genero is null or @genero=''
+		set @error=@error+'No se ingreso un genero para el cliente.'+char(13)+char(10)
+	else if @genero not in ('Male','Female')
+		set @error=@error+'El genero debe ser Male o Female.'+char(13)+char(10)
+	--si hubo algun error salimos
+	if @error<>''
+	begin
+		raiserror(@error,16,1)
+		return
+	end
+	--insertamos el cliente 
+	--Nota: realmente no estoy seguro de como manejamos el tema de los duplicados aca, si acaso se permite ingresar clientes con los mismos datos (ya que 
+	--efectivamente no podemos distinguirlos entre si, entonces, quitar el if. El if simplemente evita insertar si ya existe un cliente que tenga los
+	--datos que se quieren insertar, estariamos viendo a los clientes como un subconjunto de clientes que comparten nombre, apellido, tipo, ciudad y genero
+	--y no como clientes individuales)
+	if not exists(select 1 from clientes.cliente where nombre=@nombre and apellido=@apellido and idTipo=@idTipo and ciudad=@ciudad and genero=@genero)
+	begin
+		insert into clientes.cliente (idTipo,nombre,apellido,ciudad,genero)
+		values(@idTipo,@nombre,@apellido,@ciudad,@genero)
+	end
+end
+go
+

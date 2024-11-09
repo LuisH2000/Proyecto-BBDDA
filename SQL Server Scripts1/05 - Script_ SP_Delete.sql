@@ -171,9 +171,29 @@ begin
 	set activo = 0
 	where id = @idMp
 end
-
+go
 --TIPOCLIENTE
 --CLIENTE
+--Borrar un tipo de cliente (pensado para usarse en conjunto con clientes.cambiarClientesDeUnTipoAOtro)
+create or alter procedure clientes.borrarTipoDeCliente 
+@idTipoBr int
+as
+begin
+	declare @error varchar(max)=''
+	--verificamos que el tipo exista y que no hayan clientes que aun tienen ese tipo
+	if @idTipoBr is null or not exists (select 1 from clientes.TipoCliente where id=@idTipoBr)
+		set @error=@error+'No se ingreso un tipo de cliente o no existe.'+char(13)+char(10)
+	if exists (select 1 from clientes.Cliente where idTipo=@idTipoBr)
+		set @error=@error+'Aun existen clientes que pertenecen al tipo ingresado, migrelos a otro tipo usando clientes.cambiarClientesDeUnTipoAOtro primero.'+char(13)+char(10)
+	if @error<>''
+	begin
+		raiserror(@error,16,1)
+		return
+	end
+	delete from clientes.TipoCliente
+	where id=@idTipoBr
+end
+go
 --FACTURA
 --LINEAFACTURA
 --COMPROBANTE
