@@ -554,7 +554,7 @@ begin
 	if(@cantUsdProd>0)
 	begin
 		exec ventas.obtenerPrecioDolar @precioDolarPeso output;
-		select @precioDolarPeso as precioDolarUsado
+		--select @precioDolarPeso as precioDolarUsado
 		if(@precioDolarPeso is null)
 		begin
 			raiserror('Los productos que se intentaron comprar contenian algunos precios en dolares, la API de conversion de moneda no respondio la solicitud, intente mas tarde.',16,1)
@@ -649,13 +649,13 @@ begin
 	declare @error varchar(200) = ''
 
 	if @idProd is null
-		set @error = @error + 'No se ingreso el id del producto' + +CHAR(13)+CHAR(10)
+		set @error = @error + 'No se ingreso el id del producto' +CHAR(13)+CHAR(10)
 	if @idCategoria is null
-		set @error = @error + 'No se ingreso el id d la categoria' + +CHAR(13)+CHAR(10)
+		set @error = @error + 'No se ingreso el id d la categoria' +CHAR(13)+CHAR(10)
 	else
 	begin
 		if not exists (select 1 from catalogo.Categoria where id = @idCategoria)
-			set @error = @error + 'No existe categoria para el id ingresado' + +CHAR(13)+CHAR(10)
+			set @error = @error + 'No existe categoria para el id ingresado' +CHAR(13)+CHAR(10)
 	end
 
 	if @error <> ''
@@ -667,7 +667,50 @@ begin
 	insert into catalogo.PerteneceA(idCategoria, idProd)
 		values(@idCategoria, @idProd)
 end
-
---LINEA DE FACTURA tener en cuenta que si se inserta una linea de factura y la factura
+go
+--***LINEA DE FACTURA*** tener en cuenta que si se inserta una linea de factura y la factura
 -- ya tiene ese producto, incrementar la cantidad de esa linea
+create or alter proc ventas.insertarLineaDeFactura
+	@idFactura int,
+	@idProd int,
+	@cantidad int
+as
+begin
+	declare @error varchar(max) = ''
+	declare @precio decimal(9,2)
+	declare @valorDolar decimal(6,2)
+	if not exists (select 1 from ventas.Factura where id = @idFactura)
+		set @error = @error + 'La factura ingresada no existe' +CHAR(13)+CHAR(10)
+	if not exists (select 1 from catalogo.Producto where id = @idProd)
+		set @error = @error + 'El producto ingresado no existe' +CHAR(13)+CHAR(10)
+	if @cantidad is null or @cantidad <= 0
+		set @error = @error + 'La cantidad ingresada no es valida' +CHAR(13)+CHAR(10)
+	if (select estado from ventas.Factura where id = @idFactura) = 'Pagada'
+		set @error = @error + 'No puede agregar productos a una factura pagada' +CHAR(13)+CHAR(10)
+
+	if @error <> ''
+	begin
+		raiserror(@error, 16, 1)
+		return
+	end
+
+	if exists (select 1 from ventas.LineaDeFactura where idFactura = @idFactura and idProd = @idProd)
+		update ventas.LineaDeFactura
+			set cantidad = cantidad + @cantidad,
+				subtotal = precioUn * (cantidad + @cantidad)
+		where idFactura = @idFactura and idProd = @idProd
+	else
+	begin
+		select @precio = precio from catalogo.Producto where id = @idProd
+		if @precio is null
+		begin
+			select @precio = precioUSD from catalogo.Producto where id = @idProd
+			exec ventas.obtenerPrecioDolar @valorDolar output
+			set @precio = @precio * @valorDolar
+		end
+
+		insert into ventas.LineaDeFactura(idFactura, idProd, precioUn, cantidad, subtotal)
+			select @idFactura, @idProd, @precio, @cantidad, @precio * @cantidad
+	end
+end
 -- CLIENTE

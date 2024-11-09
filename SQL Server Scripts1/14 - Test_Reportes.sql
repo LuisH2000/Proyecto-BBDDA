@@ -62,3 +62,6 @@ exec reportes.reporteTop5MenosVendidos 2,2019
 exec reportes.totalAcumuladoFechaSucursal null, 0
 --Generamos el reporte para mostrar el acumulado de ventas por sucursal y fecha
 exec reportes.totalAcumuladoFechaSucursal '2019-01-01', 1
+
+--***Reporte de ventas***
+exec reportes.reporteDeVentas

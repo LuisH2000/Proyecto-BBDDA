@@ -260,28 +260,45 @@ where f.idFactura='239-12-1291'
 select * from catalogo.producto
 where id=6436
 
----***COMPROBANTE***
---intentamos crear un comprobante con un id vacio, medio de pago invalido y factura vacia
-exec comprobantes.insertarComprobante '', 5, ''
-exec comprobantes.insertarComprobante null, null, null
---intentamos crear un comprobante para una factura existente
-exec comprobantes.insertarComprobante '123', 1, '101-17-6199'
---intentamos crear un comprobante con un id de pago existente
-exec comprobantes.insertarComprobante '4216-6054-2680-7126', 1, '239-12-1291'
---insertamos un comprobante valido, cuando el pago es en efectivo el idPago pasa a ser --
-exec comprobantes.insertarComprobante '123', 1, '239-12-1291'
-exec comprobantes.insertarComprobante '456', 2, '980-23-2932'
---vemos el comprobante y el estado de la factura
-select *
-from comprobantes.Comprobante c
-join ventas.Factura f on f.id = c.idFactura
-where idPago = '123' or f.idFactura = '980-23-2932'
---borramos el comprobante y las facturas
-delete comprobantes.Comprobante where idFactura = 1002 or idFactura = 1001
+--borramos las facturas
 delete ventas.LineaDeFactura 
 	where idFactura in (select id from ventas.Factura 
 						where idFactura in ('239-12-1291', '980-23-2932' ))
 delete ventas.Factura where idFactura in ('239-12-1291', '980-23-2932')
+
+---***COMPROBANTE***
+--intentamos crear un comprobante con un id vacio, medio de pago invalido y factura vacia
+exec comprobantes.insertarComprobante '', 5, ''
+exec comprobantes.insertarComprobante null, null, null
+--intentamos crear un comprobante para una factura pagada
+exec comprobantes.insertarComprobante '123', 1, '101-17-6199'
+--intentamos crear un comprobante con un id de pago existente
+exec comprobantes.insertarComprobante '4216-6054-2680-7126', 1, '239-12-1291'
+--insertamos un comprobante valido
+declare @tablaProds tablaProductosIdCant
+insert into @tablaProds
+values(6436,1)
+exec ventas.insertarFactura @idFactura = '100-00-0000',@tipoFactura = 'A',@empleadoLeg = 257020, @idCliente = 1, @prodsId = @tablaProds
+exec comprobantes.insertarComprobante '123', 1, '100-00-0000'
+--insertamos un comprobante valido, cuando el pago es en efectivo el idPago pasa a ser --
+declare @tablaProds tablaProductosIdCant
+insert into @tablaProds
+values(6436,1)
+exec ventas.insertarFactura @idFactura = '110-00-0000',@tipoFactura = 'A',@empleadoLeg = 257020, @idCliente = 1, @prodsId = @tablaProds
+exec comprobantes.insertarComprobante '456', 2, '110-00-0000'
+--vemos el comprobante y el estado de la factura
+select *
+from comprobantes.Comprobante c
+join ventas.Factura f on f.id = c.idFactura
+where idPago = '123' or f.idFactura = '110-00-0000'
+--borramos el comprobante y las facturas
+delete comprobantes.Comprobante 
+where idPago = '123' or 
+		idFactura in (select id from ventas.Factura where idFactura = '110-00-0000')
+delete ventas.LineaDeFactura 
+	where idFactura in (select id from ventas.Factura 
+						where idFactura in ('100-00-0000', '110-00-0000' ))
+delete ventas.Factura where idFactura in ('100-00-0000', '110-00-0000')
 
 ---***PerteneceA***
 --intentamos insertar datos nulos
@@ -295,3 +312,26 @@ select * from catalogo.PerteneceA p
 where idProd = 1
 --borramos el registro
 delete from catalogo.PerteneceA where idProd = 1 and idCategoria = 2
+
+---***LINEA DE PRODUCTO***
+--Probamos insertar una linea con una factura, producto y cantidad invalidas
+exec ventas.insertarLineaDeFactura @idFactura = -1, @idProd = -1, @cantidad = 0
+--Insertarmos un producto que ya se encuentra en una linea de una factura
+--Volver a ejecutar el select para verificar que la cantidad y el subtotal se haya actualizado
+declare @tablaProds tablaProductosIdCant
+insert into @tablaProds
+values(1,1)
+exec ventas.insertarFactura @idFactura = '110-00-0000',@tipoFactura = 'A',@empleadoLeg = 257020, @idCliente = 1, @prodsId = @tablaProds
+
+declare @idFactura int = (select id from ventas.Factura where idFactura = '110-00-0000')
+select * from ventas.LineaDeFactura where idFactura = @idFactura
+exec ventas.insertarLineaDeFactura @idFactura = @idFactura, @idProd = 1, @cantidad = 2
+--Insertamos un producto con precio en pesos
+declare @idFactura int = (select id from ventas.Factura where idFactura = '110-00-0000')
+select * from ventas.LineaDeFactura where idFactura = @idFactura
+exec ventas.insertarLineaDeFactura @idFactura = @idFactura, @idProd = 2, @cantidad = 2
+--Insertamos un producto con precio en dolares
+declare @idFactura int = (select id from ventas.Factura where idFactura = '110-00-0000')
+select * from ventas.LineaDeFactura where idFactura = @idFactura
+exec ventas.insertarLineaDeFactura @idFactura = @idFactura, @idProd = 6436, @cantidad = 2
+

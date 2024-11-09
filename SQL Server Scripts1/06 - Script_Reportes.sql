@@ -387,4 +387,54 @@ begin
 	order by f.hora
 	for xml path('Factura'), root('ReporteAcumuladoPorSucursal');
 end
+go
 
+--Reporte de ventas
+create or alter proc reportes.reporteDeVentas
+as
+begin
+	with lineaProdDup as
+	(
+		select 
+			fa.idFactura as [Factura ID],
+			fa.tipoFactura as [Tipo de Factura],
+			cl.ciudad as [Ciudad],
+			t.tipo as [Tipo de cliente],
+			cl.genero as [Genero],
+			li.lineaProd as [Linea de Producto],
+			pr.nombre as [Producto],
+			l.precioUn as [Precio unitario],
+			l.cantidad as [Cantidad],
+			l.subtotal as [Total],
+			fa.fecha as [Fecha],
+			CONVERT(VARCHAR(5), fa.hora, 108) as [Hora],
+			m.nombreIng as [Medio de pago],
+			row_number() over(partition by fa.id, pr.id order by fa.id) as dup
+		from ventas.Factura fa
+			join recursosHumanos.Empleado e on e.legajo = fa.empleadoLeg
+			join sucursales.Sucursal s on s.id = e.idSucursal
+			join ventas.LineaDeFactura l on l.idFactura = fa.id
+			join catalogo.Producto pr on pr.id = l.idProd
+			join catalogo.PerteneceA pe on pe.idProd = pr.id
+			join catalogo.Categoria ca on ca.id = pe.idCategoria
+			join catalogo.LineaProducto li on li.id = ca.idLineaProd
+			join clientes.Cliente cl on cl.id = fa.idCliente
+			join clientes.TipoCliente t on t.id = cl.idTipo
+			join comprobantes.Comprobante co on co.idFactura = fa.id
+			join comprobantes.MedioDePago m on m.id = co.idMedPago
+	)
+	select	[Factura ID],
+			[Tipo de Factura],
+			[Ciudad],
+			[Tipo de cliente],
+			[Genero],
+			[Linea de Producto],
+			[Producto],
+			[Precio unitario],
+			[Cantidad],
+			[Total],
+			[Fecha]
+	from lineaProdDup
+	where dup = 1
+	order by fecha, hora,[Factura ID]
+end

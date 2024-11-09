@@ -2,14 +2,15 @@
 use Com5600G13
 go
 
+EXEC sp_configure 'show advanced options', 1;	--Este es para poder editar los permisos avanzados.
+RECONFIGURE;
+EXEC sp_configure 'Ole Automation Procedures', 1;	-- Aqui habilitamos esta opcion avanzada
+RECONFIGURE;
+go
+
 create or alter proc ventas.obtenerPrecioDolar @precio decimal(6,2) output
 as 
 begin
-	EXEC sp_configure 'show advanced options', 1;	--Este es para poder editar los permisos avanzados.
-	RECONFIGURE;
-	EXEC sp_configure 'Ole Automation Procedures', 1;	-- Aqui habilitamos esta opcion avanzada
-	RECONFIGURE;
-
 	DECLARE @url NVARCHAR(336) = 'https://dolarapi.com/v1/dolares/oficial'
 
 	DECLARE @Object INT
