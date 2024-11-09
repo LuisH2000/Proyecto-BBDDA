@@ -866,31 +866,6 @@ begin
 end
 go
 
-create or alter proc catalogo.modificarCategoriaDeProducto
-@idProd int,
-@idCatNvo int
-as
-begin
-	declare @error varchar(max)=''
-	if @idProd is null
-		set @error=@error+'No se ingreso un id de producto'+char(13)+char(10)
-	else if not exists(select 1 from catalogo.Producto where id=@idProd)
-		set @error=@error+'El id de producto ingresado no existe.'+char(13)+char(10)
-	if @idCatNvo is null
-		set @error=@error+'No se ingreso un id de categoria.'+char(13)+char(10)
-	else if not exists(select 1 from catalogo.categoria where id=@idCatNvo)
-		set @error=@error+'El id de categoria ingresado no existe.'+char(13)+char(10)
-	if @error<>''
-	begin
-		raiserror(@error,16,1)
-		return
-	end
-	update catalogo.PerteneceA
-	set idCategoria=@idCatNvo
-	where idProd=@idProd
-end
-go
-
 create or alter proc catalogo.aumentarPrecioProductoPorCategoria
 @idCategoria int,
 @porcentaje int
@@ -1073,8 +1048,65 @@ begin
 	where id=@idProducto
 end
 go
-	--cantxun?
+
+create or alter proc catalogo.modificarCantXUnProducto
+@idProducto int,
+@cantXUn varchar(20)
+as
+begin
+	declare @error varchar(max)=''
+	set @cantXUn=rtrim(ltrim(@cantXUn))
+	if @idProducto is null
+		set @error=@error+'No se ingreso un id de producto.'+char(13)+char(10)
+	else if not exists (select 1 from catalogo.Producto where id=@idProducto)
+		set @error=@error+'El producto ingresado no existe.'+char(13)+char(10)
+	if @cantXUn is null or @cantXUn=''
+		set @error=@error+'No se ingreso la cantidad por unidad nueva.'+char(13)+char(10)
+	if @error<>''
+	begin
+		raiserror(@error,16,1)
+		return
+	end
+	update catalogo.Producto
+	set cantXUn=@cantXUn
+	where id=@idProducto
+end
+go
+
 --PERTENECEA
+create or alter proc catalogo.modificarCategoriaDeProducto
+@idProd int,
+@idCatAnt int,
+@idCatNvo int
+as
+begin
+	declare @error varchar(max)=''
+	if @idProd is null
+		set @error=@error+'No se ingreso un id de producto'+char(13)+char(10)
+	else if not exists(select 1 from catalogo.Producto where id=@idProd)
+		set @error=@error+'El id de producto ingresado no existe.'+char(13)+char(10)
+	if @idCatNvo is null
+		set @error=@error+'No se ingreso el id de la nueva categoria.'+char(13)+char(10)
+	else if not exists(select 1 from catalogo.categoria where id=@idCatNvo)
+		set @error=@error+'El id de la nueva categoria ingresada no existe.'+char(13)+char(10)
+	if @idCatAnt is null
+		set @error=@error+'No se ingreso el id de la anterior categoria.'+char(13)+char(10)
+	else if not exists(select 1 from catalogo.categoria where id=@idCatAnt)
+		set @error=@error+'El id de la anterior categoria ingresada no existe.'+char(13)+char(10)
+	if not exists (select 1 from catalogo.PerteneceA where idProd = @idProd and idCategoria = idCategoria)
+		set @error=@error+'El producto no pertenecia a la categoria ingresada'+char(13)+char(10)
+
+	if @error<>''
+	begin
+		raiserror(@error,16,1)
+		return
+	end
+	update catalogo.PerteneceA
+	set idCategoria=@idCatNvo
+	where idProd=@idProd and idCategoria = @idCatAnt
+end
+go
+
 --CLIENTE
 --cambiar tipo de cliente de un cliente
 create or alter procedure clientes.cambiarTipoCliente
@@ -1223,6 +1255,349 @@ begin
 end
 go
 
---FACTURA , creo que no cambiamos nada
+--FACTURA
+--modificar el id de la factura
+create or alter proc ventas.modificarIdFactura
+	@id int,
+	@idFactura char(11)
+as
+begin
+	declare @error varchar(200) = ''
+	if @id is null
+		set @error=@error+'No ingreso el id de la factura'+char(13)+char(10)
+	else
+		if not exists (select 1 from ventas.Factura where id = @id)
+			set @error=@error+'La factura ingresada no existe'+char(13)+char(10)
+		else
+			if (select estado from ventas.Factura where id = @id) = 'Pagada'
+				set @error=@error+'No se puede modificar una factura pagada'+char(13)+char(10)
+
+	if @idFactura is null
+		set @error=@error+'No se ingreso el nuevo idFactura'+char(13)+char(10)
+	else
+		if @idFactura not like ('[0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9][0-9][0-9]')
+			set @error=@error+'EL idFactura ingresado no es valido, respetar el formato xxx-xx-xxxx'+char(13)+char(10)
+		else
+			if exists (select 1 from ventas.Factura where idFactura = @idFactura)
+				set @error=@error+'EL idFactura ingresado ya esta asociada a otra factura'+char(13)+char(10)
+
+
+	if @error <> ''
+	begin
+		raiserror(@error, 16, 1)
+		return
+	end
+
+	update ventas.Factura
+		set idFactura = @idFactura
+	where id = @id
+end
+go
+
+--modificar el tipo de la factura
+create or alter proc ventas.modificarTipoFactura
+	@id int,
+	@tipoFactura char(1)
+as
+begin
+	declare @error varchar(200) = ''
+	set @tipoFactura = upper(@tipoFactura)
+	if @id is null
+		set @error=@error+'No ingreso el id de la factura'+char(13)+char(10)
+	else
+		if not exists (select 1 from ventas.Factura where id = @id)
+			set @error=@error+'La factura ingresada no existe'+char(13)+char(10)
+		else
+			if (select estado from ventas.Factura where id = @id) = 'Pagada'
+				set @error=@error+'No se puede modificar una factura pagada'+char(13)+char(10)
+
+	if @tipoFactura is null
+		set @error=@error+'No se ingreso el tipo de factura'+char(13)+char(10)
+	else
+		if @tipoFactura not in ('A', 'B', 'C')
+			set @error=@error+'El tipo de factura ingresado no es valido, puede ser A, B o C'+char(13)+char(10)
+	
+	if @error <> ''
+	begin
+		raiserror(@error, 16, 1)
+		return
+	end
+
+	update ventas.Factura
+		set tipoFactura = @tipoFactura
+	where id = @id
+end
+go
+
+--modificar la fecha
+create or alter proc ventas.modificarFechaFactura
+	@id int,
+	@fecha date
+as
+begin
+	declare @error varchar(200) = ''
+	if @id is null
+		set @error=@error+'No ingreso el id de la factura'+char(13)+char(10)
+	else
+		if not exists (select 1 from ventas.Factura where id = @id)
+			set @error=@error+'La factura ingresada no existe'+char(13)+char(10)
+		else
+			if (select estado from ventas.Factura where id = @id) = 'Pagada'
+				set @error=@error+'No se puede modificar una factura pagada'+char(13)+char(10)
+
+	if @fecha is null
+		set @error=@error+'No se ingreso la fecha'+char(13)+char(10)
+
+	if @error <> ''
+	begin
+		raiserror(@error, 16, 1)
+		return
+	end
+
+	update ventas.Factura
+		set fecha = @fecha
+	where id = @id
+end
+go
+
+--modificar la hora
+create or alter proc ventas.modificarFechaFactura
+	@id int,
+	@hora time
+as
+begin
+	declare @error varchar(200) = ''
+	if @id is null
+		set @error=@error+'No ingreso el id de la factura'+char(13)+char(10)
+	else
+		if not exists (select 1 from ventas.Factura where id = @id)
+			set @error=@error+'La factura ingresada no existe'+char(13)+char(10)
+		else
+			if (select estado from ventas.Factura where id = @id) = 'Pagada'
+				set @error=@error+'No se puede modificar una factura pagada'+char(13)+char(10)
+
+	if @hora is null
+		set @error=@error+'No se ingreso la hora'+char(13)+char(10)
+
+	if @error <> ''
+	begin
+		raiserror(@error, 16, 1)
+		return
+	end
+
+	update ventas.Factura
+		set hora = @hora
+	where id = @id
+end
+go
+
+--modificar el empleado
+create or alter proc ventas.modificarEmpleadoDeFactura
+	@id int,
+	@legajoEmp int
+as
+begin
+	declare @error varchar(200) = ''
+	if @id is null
+		set @error=@error+'No ingreso el id de la factura'+char(13)+char(10)
+	else
+		if not exists (select 1 from ventas.Factura where id = @id)
+			set @error=@error+'La factura ingresada no existe'+char(13)+char(10)
+		else
+			if (select estado from ventas.Factura where id = @id) = 'Pagada'
+				set @error=@error+'No se puede modificar una factura pagada'+char(13)+char(10)
+
+	if @legajoEmp is null
+		set @error=@error+'No ingreso el legajo del empleado'+char(13)+char(10)
+	else
+		if not exists (select 1 from recursosHumanos.Empleado where legajo = @legajoEmp)
+			set @error=@error+'El empleado ingresado no existe'+char(13)+char(10)
+
+	if @error <> ''
+	begin
+		raiserror(@error, 16, 1)
+		return
+	end
+
+	update ventas.Factura
+		set empleadoLeg = @legajoEmp
+	where id = @id
+	
+end
+go
+
+--modificar el cliente
+create or alter proc ventas.modificarClienteDeFactura
+	@id int,
+	@idCliente int
+as
+begin
+	declare @error varchar(200) = ''
+	if @id is null
+		set @error=@error+'No ingreso el id de la factura'+char(13)+char(10)
+	else
+		if not exists (select 1 from ventas.Factura where id = @id)
+			set @error=@error+'La factura ingresada no existe'+char(13)+char(10)
+		else
+			if (select estado from ventas.Factura where id = @id) = 'Pagada'
+				set @error=@error+'No se puede modificar una factura pagada'+char(13)+char(10)
+
+	if @idCliente is null
+		set @error=@error+'No ingreso el id del cliente'+char(13)+char(10)
+	else
+		if not exists (select 1 from clientes.Cliente where id = @idCliente)
+			set @error=@error+'El cliente ingresado no existe'+char(13)+char(10)
+
+	if @error <> ''
+	begin
+		raiserror(@error, 16, 1)
+		return
+	end
+
+	update ventas.Factura
+		set idCliente = @idCliente
+	where id = @id
+	
+end
+go
+
 --LINEA DE FACTURA
---COMPROBANTE, creo que no cambiamos nada
+--modificar producto
+create or alter proc ventas.modificarProductoLineaDeFactura
+	@idLn int,
+	@idFactura int,
+	@idProd int
+as
+begin
+	declare @error varchar(200) = ''
+	if @idFactura is null
+		set @error=@error+'No ingreso el id de la factura'+char(13)+char(10)
+	else
+		if not exists (select 1 from ventas.Factura where id = @idFactura)
+			set @error=@error+'La factura ingresada no existe'+char(13)+char(10)
+		else
+			if (select estado from ventas.Factura where id = @idFactura) = 'Pagada'
+				set @error=@error+'No se puede modificar una factura pagada'+char(13)+char(10)
+
+	if @idLn is null
+		set @error=@error+'No ingreso el id de la linea de factura'+char(13)+char(10)
+	else
+		if not exists (select 1 from ventas.LineaDeFactura where id = @idLn)
+			set @error=@error+'La linea de factura ingresada no existe'+char(13)+char(10)
+		else
+			if not exists(select 1  from ventas.LineaDeFactura where id = @idLn and idFactura = @idFactura)
+				set @error=@error+'La linea ingresada no pertenece a la factura ingresada'+char(13)+char(10)
+			else
+				if exists (select 1 from ventas.LineaDeFactura where idFactura = @idFactura and 
+																	id <> @idLn and idProd = @idProd)
+					set @error=@error+'La factura ingresada ya tiene una linea con el producto ingresado'+char(13)+char(10)
+
+	if @idProd is null
+		set @error=@error+'No se ingreso el id del producto'+char(13)+char(10)
+	else
+		if not exists (select 1 from catalogo.Producto where id = @idProd)
+			set @error=@error+'El producto ingresado no existe'+char(13)+char(10)
+
+	if @error <> ''
+	begin
+		raiserror(@error, 16, 1)
+		return
+	end
+
+	declare @precio decimal(9,2)
+	declare @valorDolar decimal(6,2)
+	select @precio = precio from catalogo.Producto where id = @idProd
+	if @precio is null
+	begin
+		select @precio = precioUSD from catalogo.Producto where id = @idProd
+		exec ventas.obtenerPrecioDolar @valorDolar output
+		set @precio = @precio * @valorDolar
+	end
+	update ventas.LineaDeFactura
+		set idProd = @idProd,
+			precioUn = @precio,
+			subtotal = @precio * cantidad
+	where id = @idLn
+
+end
+go
+
+--modificar id de la factura
+create or alter proc ventas.modificarIdFacturaLineaDeFactura
+	@idLn int,
+	@idFactura int
+as
+begin
+	declare @error varchar(200) = ''
+	if @idFactura is null
+		set @error=@error+'No ingreso el id de la factura'+char(13)+char(10)
+	else
+		if not exists (select 1 from ventas.Factura where id = @idFactura)
+			set @error=@error+'La factura ingresada no existe'+char(13)+char(10)
+		else
+			if (select estado from ventas.Factura where id = @idFactura) = 'Pagada'
+				set @error=@error+'No se puede modificar una factura pagada'+char(13)+char(10)
+
+	if @idLn is null
+		set @error=@error+'No ingreso el id de la linea de factura'+char(13)+char(10)
+	else
+		if not exists (select 1 from ventas.LineaDeFactura where id = @idLn)
+			set @error=@error+'La linea de factura ingresada no existe'+char(13)+char(10)
+		else
+		if (select estado from ventas.Factura f join ventas.LineaDeFactura l on l.idFactura = f.id
+			where l.id = @idLn) = 'Pagada'
+			set @error=@error+'La linea de factura que quiere cambiar, esta asociada a una facutra pagada'+char(13)+char(10)
+	
+	if @error <> ''
+	begin
+		raiserror(@error, 16, 1)
+		return
+	end
+
+	declare @idProd int = (select idProd from ventas.LineaDeFactura where id = @idLn)
+	if @idProd in (select idProd from ventas.LineaDeFactura where idFactura = @idFactura)
+	begin
+		raiserror('La factura a la que quiere cambiar, ya tiene una linea con el producto', 16, 1)
+		return
+	end
+
+	update ventas.LineaDeFactura
+		set idFactura = @idFactura
+	where id = @idLn
+
+end
+go
+
+--modificar la cantidad
+create or alter proc ventas.modificarCantidadLineaDeFactura
+	@idLn int,
+	@cantidad int
+as
+begin
+	declare @error varchar(200) = ''
+	if @idLn is null
+		set @error=@error+'No ingreso el id de la linea de factura'+char(13)+char(10)
+	else
+		if not exists (select 1 from ventas.LineaDeFactura where id = @idLn)
+			set @error=@error+'La linea de factura ingresada no existe'+char(13)+char(10)
+		else
+		if (select estado from ventas.Factura f join ventas.LineaDeFactura l on l.idFactura = f.id
+			where l.id = @idLn) = 'Pagada'
+			set @error=@error+'La linea de factura que quiere cambiar, esta asociada a una facutra pagada'+char(13)+char(10)
+	
+	if @cantidad is null or @cantidad <= 0
+		set @error=@error+'La cantidad ingresada no es valida'+char(13)+char(10)
+
+	if @error <> ''
+	begin
+		raiserror(@error, 16, 1)
+		return
+	end
+
+	update ventas.LineaDeFactura
+		set cantidad = @cantidad,
+			subtotal = @cantidad * precioUn
+	where id = @idLn
+
+end
+--COMPROBANTE

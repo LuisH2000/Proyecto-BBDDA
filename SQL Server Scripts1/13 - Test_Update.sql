@@ -495,41 +495,6 @@ update catalogo.Producto set activo = 0 where id = 1
 select * from catalogo.Producto where id = 1
 exec catalogo.darAltaProductoEnBaja 1
 
---CAMBIAR CATEGORIA DE PRODUCTO
---intentamos cambiar la categoria de un producto a uno que no existe
-exec catalogo.modificarCategoriaDeProducto 1,19000
---ahora intentamos con datos nulos
-exec catalogo.modificarCategoriaDeProducto null,null
---ahora con un producto que no existe
-exec catalogo.modificarCategoriaDeProducto 190291,3
-
---ahora un caso valido donde cambiamos la categoria del producto y luego lo restauramos usando el mismo sp (ejecutar bloque completo)
-declare @idProd int
-declare @nuevaCat int
-declare @oriCat int
-set @idProd=(select top 1 id from catalogo.producto)
-set @oriCat=(select c.id from catalogo.Categoria c 
-			inner join catalogo.PerteneceA a on c.id=a.idCategoria where a.idProd=@idProd)
-set @nuevaCat=(select top 1 id from catalogo.Categoria where id<>@oriCat)
-
-select p.id, p.nombre, c.categoria,lp.lineaProd 
-from catalogo.Producto p 
-	inner join catalogo.PerteneceA pa on p.id=pa.idProd 
-	inner join catalogo.categoria c on c.id=pa.idCategoria 
-	inner join catalogo.LineaProducto lp on lp.id=c.idLineaProd where p.id=@idProd
-exec catalogo.modificarCategoriaDeProducto @idProd,@nuevaCat --cambiamos la categoria usando el sp
-
-select p.id, p.nombre, c.categoria,lp.lineaProd 
-from catalogo.Producto p 
-	inner join catalogo.PerteneceA pa on p.id=pa.idProd 
-	inner join catalogo.categoria c on c.id=pa.idCategoria 
-	inner join catalogo.LineaProducto lp on lp.id=c.idLineaProd where p.id=@idProd
-exec catalogo.modificarCategoriaDeProducto @idProd,@oriCat --restauramos la categoria tambien usando el sp
-
-select p.id, p.nombre, c.categoria,lp.lineaProd from catalogo.Producto p inner join catalogo.PerteneceA pa on p.id=pa.idProd inner join
-catalogo.categoria c on c.id=pa.idCategoria inner join catalogo.LineaProducto lp on lp.id=c.idLineaProd where p.id=@idProd
---nota que si modificas la categoria de un producto, su linea de producto tambien cambia (ya que la categoria se asocia a una lp especifica)
-
 --AUMENTAR PRECIO DE PRODUCTO CON PORCENTAJE POR CATEGORIA
 --intentamos ingresar un porcentaje y id de categoria nulos
 exec catalogo.aumentarPrecioProductoPorCategoria null,null
@@ -538,21 +503,21 @@ exec catalogo.aumentarPrecioProductoPorCategoria 1,0
 
 --ahora intentemos un caso valido, para esto ejecutamos la transaccion completa
 begin transaction
-select top 5 p.id,p.nombre,p.precio,c.categoria from catalogo.Producto p
-inner join catalogo.PerteneceA pa
-on p.id=pa.idProd
-inner join catalogo.categoria c
-on c.id=pa.idCategoria
-where c.id=1
---ejecutamos el sp
-exec catalogo.aumentarPrecioProductoPorCategoria 1,100 --aumentamos el precio un 100% (duplicamos)
---vemos el aumento
-select top 5 p.id,p.nombre,p.precio,c.categoria from catalogo.Producto p
-inner join catalogo.PerteneceA pa
-on p.id=pa.idProd
-inner join catalogo.categoria c
-on c.id=pa.idCategoria
-where c.id=1
+	select top 5 p.id,p.nombre,p.precio,c.categoria from catalogo.Producto p
+	inner join catalogo.PerteneceA pa
+	on p.id=pa.idProd
+	inner join catalogo.categoria c
+	on c.id=pa.idCategoria
+	where c.id=1
+	--ejecutamos el sp
+	exec catalogo.aumentarPrecioProductoPorCategoria 1,100 --aumentamos el precio un 100% (duplicamos)
+	--vemos el aumento
+	select top 5 p.id,p.nombre,p.precio,c.categoria from catalogo.Producto p
+	inner join catalogo.PerteneceA pa
+	on p.id=pa.idProd
+	inner join catalogo.categoria c
+	on c.id=pa.idCategoria
+	where c.id=1
 --deshacemos el update con rollback
 rollback
 
@@ -564,23 +529,23 @@ exec catalogo.aumentarPrecioUSDProductoPorCategoria 1,0
 
 --ahora intentemos un caso valido, para esto ejecutamos la transaccion completa
 begin transaction
-select top 5 p.id,p.nombre,p.precioUSD,c.categoria from catalogo.Producto p
-inner join catalogo.PerteneceA pa
-on p.id=pa.idProd
-inner join catalogo.categoria c
-on c.id=pa.idCategoria
-where precioUSD is not null
---ejecutamos el sp
-exec catalogo.aumentarPrecioUSDProductoPorCategoria 149,100 --aumentamos el precio un 100% (duplicamos), 149 es la categoria electronica
+	select top 5 p.id,p.nombre,p.precioUSD,c.categoria from catalogo.Producto p
+	inner join catalogo.PerteneceA pa
+	on p.id=pa.idProd
+	inner join catalogo.categoria c
+	on c.id=pa.idCategoria
+	where precioUSD is not null
+	--ejecutamos el sp
+	exec catalogo.aumentarPrecioUSDProductoPorCategoria 149,100 --aumentamos el precio un 100% (duplicamos), 149 es la categoria electronica
 
---vemos el aumento
-select top 5 p.id,p.nombre,p.precioUSD,c.categoria from catalogo.Producto p
-inner join catalogo.PerteneceA pa
-on p.id=pa.idProd
-inner join catalogo.categoria c
-on c.id=pa.idCategoria
-where precioUSD is not null
---deshacemos el update con rollback
+	--vemos el aumento
+	select top 5 p.id,p.nombre,p.precioUSD,c.categoria from catalogo.Producto p
+	inner join catalogo.PerteneceA pa
+	on p.id=pa.idProd
+	inner join catalogo.categoria c
+	on c.id=pa.idCategoria
+	where precioUSD is not null
+	--deshacemos el update con rollback
 rollback
 
 --REDUCIR PRECIO DE PRODUCTO CON PORCENTAJE POR CATEGORIA
@@ -593,22 +558,22 @@ exec catalogo.reducirPrecioProductoPorCategoria 1,100
 
 --ahora un caso valido, para esto ejecutamos la transaccion completa
 begin transaction
-select top 5 p.id,p.nombre,p.precio,c.categoria from catalogo.Producto p
-inner join catalogo.PerteneceA pa
-on p.id=pa.idProd
-inner join catalogo.categoria c
-on c.id=pa.idCategoria
-where c.id=1
---ejecutamos el sp
-exec catalogo.reducirPrecioProductoPorCategoria 1,50 --reducimos el precio a la mitad (50% de descuento)
---vemos el aumento
-select top 5 p.id,p.nombre,p.precio,c.categoria from catalogo.Producto p
-inner join catalogo.PerteneceA pa
-on p.id=pa.idProd
-inner join catalogo.categoria c
-on c.id=pa.idCategoria
-where c.id=1
---deshacemos el update con rollback
+	select top 5 p.id,p.nombre,p.precio,c.categoria from catalogo.Producto p
+	inner join catalogo.PerteneceA pa
+	on p.id=pa.idProd
+	inner join catalogo.categoria c
+	on c.id=pa.idCategoria
+	where c.id=1
+	--ejecutamos el sp
+	exec catalogo.reducirPrecioProductoPorCategoria 1,50 --reducimos el precio a la mitad (50% de descuento)
+	--vemos el aumento
+	select top 5 p.id,p.nombre,p.precio,c.categoria from catalogo.Producto p
+	inner join catalogo.PerteneceA pa
+	on p.id=pa.idProd
+	inner join catalogo.categoria c
+	on c.id=pa.idCategoria
+	where c.id=1
+	--deshacemos el update con rollback
 rollback
 
 --REDUCIR PRECIO USD DE PRODUCTO CON PORCENTAJE POR CATEGORIA
@@ -621,22 +586,22 @@ exec catalogo.reducirPrecioUSDProductoPorCategoria 1,100
 
 --ahora un caso valido, para esto ejecutamos la transaccion completa
 begin transaction
-select top 5 p.id,p.nombre,p.precioUSD,c.categoria from catalogo.Producto p
-inner join catalogo.PerteneceA pa
-on p.id=pa.idProd
-inner join catalogo.categoria c
-on c.id=pa.idCategoria
-where precioUSD is not null
---ejecutamos el sp
-exec catalogo.reducirPrecioUSDProductoPorCategoria 149,50 --reducimos el precio a la mitad (50% de descuento) (149 es el id de la categoria tecnologia)
---vemos el aumento
-select top 5 p.id,p.nombre,p.precioUSD,c.categoria from catalogo.Producto p
-inner join catalogo.PerteneceA pa
-on p.id=pa.idProd
-inner join catalogo.categoria c
-on c.id=pa.idCategoria
-where precioUSD is not null
---deshacemos el update con rollback
+	select top 5 p.id,p.nombre,p.precioUSD,c.categoria from catalogo.Producto p
+	inner join catalogo.PerteneceA pa
+	on p.id=pa.idProd
+	inner join catalogo.categoria c
+	on c.id=pa.idCategoria
+	where precioUSD is not null
+	--ejecutamos el sp
+	exec catalogo.reducirPrecioUSDProductoPorCategoria 149,50 --reducimos el precio a la mitad (50% de descuento) (149 es el id de la categoria tecnologia)
+	--vemos el aumento
+	select top 5 p.id,p.nombre,p.precioUSD,c.categoria from catalogo.Producto p
+	inner join catalogo.PerteneceA pa
+	on p.id=pa.idProd
+	inner join catalogo.categoria c
+	on c.id=pa.idCategoria
+	where precioUSD is not null
+	--deshacemos el update con rollback
 rollback
 
 --CAMBIAR NOMBRE DE UN PRODUCTO
@@ -646,11 +611,11 @@ exec catalogo.modificarNombreProducto null,null
 exec catalogo.modificarNombreProducto 1,'    '
 --ahora un caso valido (ejecutar transaccion completa)
 begin transaction
-select id,nombre,precio from catalogo.producto where id=1
-exec catalogo.modificarNombreProducto 1,'Bujia hescher'
---vemos el cambio
-select id,nombre,precio from catalogo.producto where id=1
---deshacemos el cambio
+	select id,nombre,precio from catalogo.producto where id=1
+	exec catalogo.modificarNombreProducto 1,'Bujia hescher'
+	--vemos el cambio
+	select id,nombre,precio from catalogo.producto where id=1
+	--deshacemos el cambio
 rollback
 
 --CAMBIAR PROVEEDOR DE UN PRODUCTO
@@ -661,12 +626,71 @@ exec catalogo.modificarProveedorProducto 293202,'        '
 
 --ahora un caso valido
 begin transaction
-select id,nombre,precio,proveedor from catalogo.producto where id=1
-exec catalogo.modificarProveedorProducto 1,'Kwik-E-Mart'
---vemos los cambios
-select id,nombre,precio,proveedor from catalogo.producto where id=1
---deshacemos los cambios
+	select id,nombre,precio,proveedor from catalogo.producto where id=1
+	exec catalogo.modificarProveedorProducto 1,'Kwik-E-Mart'
+	--vemos los cambios
+	select id,nombre,precio,proveedor from catalogo.producto where id=1
+	--deshacemos los cambios
 rollback
+
+--CAMBIAR LA CANTIDAD POR UNIDAD DEL PRODUCTO
+--Probamos un producto que no existe y una cantidad por unidad vacia
+exec catalogo.modificarCantXUnProducto 123456789, '    ' 
+--Cambiamos la cantidad por unidad de un producto
+begin transaction
+	select * from catalogo.Producto where id = 1
+	exec catalogo.modificarCantXUnProducto 1, '1bolsa - 1kg'
+	select * from catalogo.Producto where id = 1
+rollback
+
+
+--**PERTENECEA**
+--CAMBIAR CATEGORIA DE PRODUCTO
+select * from catalogo.PerteneceA where idProd = 1
+--intentamos cambiar la categoria de un producto a uno que no existe
+exec catalogo.modificarCategoriaDeProducto @idProd = 1, @idCatAnt = 90, @idCatNvo = 19000
+--ahora intentamos con datos nulos
+exec catalogo.modificarCategoriaDeProducto null, null, null
+--ahora con un producto que no existe
+exec catalogo.modificarCategoriaDeProducto @idProd = 190291, @idCatAnt = 1, @idCatNvo = 3
+
+--ahora un caso valido donde cambiamos la categoria del producto y luego lo restauramos usando el mismo sp (ejecutar bloque completo)
+declare @idProd int
+declare @nuevaCat int
+declare @oriCat int
+set @idProd=(select top 1 id from catalogo.producto)
+set @oriCat=(select c.id from catalogo.Categoria c 
+			inner join catalogo.PerteneceA a on c.id=a.idCategoria where a.idProd=@idProd)
+set @nuevaCat=(select top 1 id from catalogo.Categoria where id<>@oriCat)
+
+exec catalogo.modificarCategoriaDeProducto @idProd = @idProd,@idCatAnt = @oriCat, @idCatNvo = @nuevaCat --cambiamos la categoria usando el sp
+select p.id, p.nombre, c.categoria,lp.lineaProd 
+from catalogo.Producto p 
+	inner join catalogo.PerteneceA pa on p.id=pa.idProd 
+	inner join catalogo.categoria c on c.id=pa.idCategoria 
+	inner join catalogo.LineaProducto lp on lp.id=c.idLineaProd where p.id=@idProd
+--restauramos la categoria tambien usando el sp
+declare @idProd int
+declare @nuevaCat int
+declare @oriCat int
+set @idProd=(select top 1 id from catalogo.producto)
+set @oriCat=(select c.id from catalogo.Categoria c 
+			inner join catalogo.PerteneceA a on c.id=a.idCategoria where a.idProd=@idProd)
+set @nuevaCat=(select top 1 id from catalogo.Categoria where categoria = 'fruta')
+
+exec catalogo.modificarCategoriaDeProducto @idProd = @idProd, @idCatAnt = @oriCat, @idCatNvo = @nuevaCat 
+select p.id, p.nombre, c.categoria,lp.lineaProd 
+from catalogo.Producto p 
+	inner join catalogo.PerteneceA pa on p.id=pa.idProd 
+	inner join catalogo.categoria c on c.id=pa.idCategoria 
+	inner join catalogo.LineaProducto lp on lp.id=c.idLineaProd where p.id=@idProd
+
+declare @idProd int
+set @idProd=(select top 1 id from catalogo.producto)
+select p.id, p.nombre, c.categoria,lp.lineaProd from catalogo.Producto p inner join catalogo.PerteneceA pa on p.id=pa.idProd inner join
+catalogo.categoria c on c.id=pa.idCategoria inner join catalogo.LineaProducto lp on lp.id=c.idLineaProd where p.id=@idProd
+--nota que si modificas la categoria de un producto, su linea de producto tambien cambia (ya que la categoria se asocia a una lp especifica)
+
 
 --**CLIENTE**
 --CAMBIAR TIPO DE CLIENTE DE UN CLIENTE
@@ -676,14 +700,14 @@ exec clientes.cambiarTipoCliente null,null
 exec clientes.cambiarTipoCliente 293902,39293
 --ahora con un caso valido (ejecutar transaccion completa)
 begin transaction
-declare @idCli int
-set @idCli=(select top 1 id from clientes.cliente where idTipo<>2)
---vemos que el cliente es del tipo 1
-select c.id,c.ciudad,c.genero,tc.id,tc.tipo from clientes.cliente c inner join clientes.TipoCliente tc on c.idTipo=tc.id where c.id=@idCli
-exec clientes.cambiarTipoCliente @idCli,2
---vemos que se modifico
-select c.id,c.ciudad,c.genero,tc.id,tc.tipo from clientes.cliente c inner join clientes.TipoCliente tc on c.idTipo=tc.id where c.id=@idCli
---restauramos el  estado original
+	declare @idCli int
+	set @idCli=(select top 1 id from clientes.cliente where idTipo<>2)
+	--vemos que el cliente es del tipo 1
+	select c.id,c.ciudad,c.genero,tc.id,tc.tipo from clientes.cliente c inner join clientes.TipoCliente tc on c.idTipo=tc.id where c.id=@idCli
+	exec clientes.cambiarTipoCliente @idCli,2
+	--vemos que se modifico
+	select c.id,c.ciudad,c.genero,tc.id,tc.tipo from clientes.cliente c inner join clientes.TipoCliente tc on c.idTipo=tc.id where c.id=@idCli
+	--restauramos el  estado original
 rollback
 
 
@@ -694,17 +718,17 @@ exec clientes.cambiarClientesDeUnTipoAOtro null,null
 exec clientes.cambiarClientesDeUnTipoAOtro 1932902,29392
 --ahora un caso valido donde vamos a pasar todos los clientes de un tipo a otro
 begin transaction
-declare @idTipoNvo int
-declare @idTipoViejo int
-set @idTipoViejo=(select top 1 id from clientes.TipoCliente)
-set @idTipoNvo=(select top 1 id from clientes.TipoCliente where id<>@idTipoViejo)
---vemos cuantos clientes del tipo actual hay
-select count(1) as cantClientesTipoViejo from clientes.cliente where idTipo=@idTipoViejo
---los cambiamos a la clase nueva
-exec clientes.cambiarClientesDeUnTipoAOtro @idTipoViejo,@idTipoNvo
---vemos que se cambiaron contando cuantos clientes del tipo viejo hay
-select count(1) as cantClientesTipoViejo from clientes.cliente where idTipo=@idTipoViejo
---restauramos los clientes a su tipo anterior
+	declare @idTipoNvo int
+	declare @idTipoViejo int
+	set @idTipoViejo=(select top 1 id from clientes.TipoCliente)
+	set @idTipoNvo=(select top 1 id from clientes.TipoCliente where id<>@idTipoViejo)
+	--vemos cuantos clientes del tipo actual hay
+	select count(1) as cantClientesTipoViejo from clientes.cliente where idTipo=@idTipoViejo
+	--los cambiamos a la clase nueva
+	exec clientes.cambiarClientesDeUnTipoAOtro @idTipoViejo,@idTipoNvo
+	--vemos que se cambiaron contando cuantos clientes del tipo viejo hay
+	select count(1) as cantClientesTipoViejo from clientes.cliente where idTipo=@idTipoViejo
+	--restauramos los clientes a su tipo anterior
 rollback
 
 
@@ -718,15 +742,15 @@ exec clientes.cambiarNombreCliente 1,'    '
 
 --ahora un caso valido donde al cliente con id 1 le cambiamos el nombre a Pollito (ejecutar transaccion completa)
 begin transaction
---vemos el nombre que tiene ahora mismo (podria no tenerlo si corresponde a alguno de los cargados por archivo)
-select * from clientes.cliente
-where id=1
---le ponemos el nombre nuevo
-exec clientes.cambiarNombreCliente 1,'Pollito'
---vemos que se efecutaron los cambios
-select * from clientes.cliente
-where id=1
---restauramos los datos
+	--vemos el nombre que tiene ahora mismo (podria no tenerlo si corresponde a alguno de los cargados por archivo)
+	select * from clientes.cliente
+	where id=1
+	--le ponemos el nombre nuevo
+	exec clientes.cambiarNombreCliente 1,'Pollito'
+	--vemos que se efecutaron los cambios
+	select * from clientes.cliente
+	where id=1
+	--restauramos los datos
 rollback
 
 --CAMBIAR APELLIDO DE CLIENTE
@@ -739,15 +763,15 @@ exec clientes.cambiarApellidoCliente 1,'    '
 
 --ahora un caso valido donde al cliente con id 1 le cambiamos el apellido a Perez (ejecutar transaccion completa)
 begin transaction
---vemos el apellido que tiene ahora mismo (podria no tenerlo si corresponde a alguno de los cargados por archivo)
-select * from clientes.cliente
-where id=1
---le ponemos el apellido nuevo
-exec clientes.cambiarApellidoCliente 1,'Perez'
---vemos que se efecutaron los cambios
-select * from clientes.cliente
-where id=1
---restauramos los datos
+	--vemos el apellido que tiene ahora mismo (podria no tenerlo si corresponde a alguno de los cargados por archivo)
+	select * from clientes.cliente
+	where id=1
+	--le ponemos el apellido nuevo
+	exec clientes.cambiarApellidoCliente 1,'Perez'
+	--vemos que se efecutaron los cambios
+	select * from clientes.cliente
+	where id=1
+	--restauramos los datos
 rollback
 
 --CAMBIAR CIUDAD DE CLIENTE
@@ -760,15 +784,15 @@ exec clientes.cambiarCiudadCliente 1,'    '
 
 --ahora un caso valido donde al cliente con id 1 le cambiamos la ciudad a Springfield (ejecutar transaccion completa)
 begin transaction
---vemos la ciudad que tiene ahora mismo
-select * from clientes.cliente
-where id=1
---le ponemos la ciudad nueva
-exec clientes.cambiarCiudadCliente 1,'Springfield'
---vemos que se efecutaron los cambios
-select * from clientes.cliente
-where id=1
---restauramos los datos
+	--vemos la ciudad que tiene ahora mismo
+	select * from clientes.cliente
+	where id=1
+	--le ponemos la ciudad nueva
+	exec clientes.cambiarCiudadCliente 1,'Springfield'
+	--vemos que se efecutaron los cambios
+	select * from clientes.cliente
+	where id=1
+	--restauramos los datos
 rollback
 
 --CAMBIAR GENERO DE CLIENTE
@@ -781,15 +805,211 @@ exec clientes.cambiarGeneroCliente 1,'    '
 
 --ahora un caso valido donde al cliente le cambiamos el genero a male(ejecutar transaccion completa)
 begin transaction
-declare @idCli int
-set @idCli=(select top 1 id from clientes.cliente where genero<>'Male')
---vemos el genero que tiene ahora mismo
-select * from clientes.cliente
-where id=@idCli
---le ponemos el nombre nuevo
-exec clientes.cambiarGeneroCliente 1,'Male'
---vemos que se efecutaron los cambios
-select * from clientes.cliente
-where id=@idCli
---restauramos los datos
+	declare @idCli int
+	set @idCli=(select top 1 id from clientes.cliente where genero<>'Male')
+	--vemos el genero que tiene ahora mismo
+	select * from clientes.cliente
+	where id=@idCli
+	--le ponemos el nombre nuevo
+	exec clientes.cambiarGeneroCliente 1,'Male'
+	--vemos que se efecutaron los cambios
+	select * from clientes.cliente
+	where id=@idCli
+	--restauramos los datos
+rollback
+
+--***FACTURA***
+--MODIFICAR EL IDFACTURA
+--intentamos con parametros nulos
+exec ventas.modificarIdFactura @id = null, @idFactura = null
+--intentamos un id que no existe y un idfactura invalido
+exec ventas.modificarIdFactura @id = -1, @idFactura = '1-11-111'
+--intentamos modificar una factura pagada y un idfactura en uso
+select * from ventas.Factura where id = 1
+exec ventas.modificarIdFactura @id = -1, @idFactura = '750-67-8428'
+--modificamos el idfactura de una factura impaga
+begin transaction
+	insert into ventas.Factura(idFactura, estado) values('111-11-1111', 'Impaga')
+	declare @id char(11) = (select id from ventas.Factura where idFactura = '111-11-1111')
+	select * from ventas.Factura where id = @id
+	exec ventas.modificarIdFactura @id = @id, @idFactura = '222-22-2222'
+
+	declare @id char(11) = (select id from ventas.Factura where idFactura = '222-22-2222')
+	select * from ventas.Factura where id = @id
+rollback
+
+--MODIFICAR TIPO DE FACTURA
+--intentamos con parametros nulos
+exec ventas.modificarTipoFactura @id = null, @tipoFactura = null
+--intentamos un id que no existe y un tipo de factura invalido
+exec ventas.modificarTipoFactura @id = -1, @tipoFactura = 'z'
+--intentamos con una factura pagada
+exec ventas.modificarTipoFactura @id = 1, @tipoFactura = 'A'
+--modificamos el tipo de una factura
+begin transaction
+	insert into ventas.Factura(idFactura, estado) values('111-11-1111', 'Impaga')
+	declare @id char(11) = (select id from ventas.Factura where idFactura = '111-11-1111')
+	select * from ventas.Factura where id = @id
+	exec ventas.modificarTipoFactura @id = @id, @tipoFactura = 'A'
+	select * from ventas.Factura where id = @id
+rollback
+
+--MODIFICAR FECHA FACTURA
+--intentamos con parametros nulos
+exec ventas.modificarFechaFactura @id = null, @fecha = null
+--intentamos con un id que no existe
+exec ventas.modificarFechaFactura @id = -1, @fecha = '2020-01-01'
+--intentamos con una factura pagada
+exec ventas.modificarFechaFactura @id = 1, @fecha = '2020-01-01'
+--modificamos la fecha de una factura
+begin transaction
+	insert into ventas.Factura(idFactura, estado) values('111-11-1111', 'Impaga')
+	declare @id char(11) = (select id from ventas.Factura where idFactura = '111-11-1111')
+	select * from ventas.Factura where id = @id
+	exec ventas.modificarFechaFactura @id = @id, @fecha = '2020-01-01'
+	select * from ventas.Factura where id = @id
+rollback
+
+--MODIFICAR LA HORA DE LA FACTURA
+--intentamos com parametros nulos
+exec ventas.modificarFechaFactura @id = null, @hora = null
+--intentamos con un id que no existe
+exec ventas.modificarFechaFactura @id = -1, @hora = '12:03'
+--intentamos con una facutura pagada
+exec ventas.modificarFechaFactura @id = 1, @hora = '12:03'
+--modificamos la hora de una factura
+begin transaction
+	insert into ventas.Factura(idFactura, estado) values('111-11-1111', 'Impaga')
+	declare @id char(11) = (select id from ventas.Factura where idFactura = '111-11-1111')
+	select * from ventas.Factura where id = @id
+	exec ventas.modificarFechaFactura @id = @id, @hora = '12:03'
+	select * from ventas.Factura where id = @id
+rollback
+
+--MODIFICAR EMPLEADO DE UNA FACTURA
+--intentamos con parametros nulos
+exec ventas.modificarEmpleadoDeFactura @id = null, @legajoEmp = null
+--intentamos con un id que no existe y empleado que no existe
+exec ventas.modificarEmpleadoDeFactura @id = -1, @legajoEmp = 2
+--intentamos con una factura pagada
+declare @legajo int = (select top 1 legajo from recursosHumanos.Empleado)
+exec ventas.modificarEmpleadoDeFactura @id = 1, @legajoEmp = @legajo
+--modificamos el empleado que genera la factura
+begin transaction
+	insert into ventas.Factura(idFactura, estado) values('111-11-1111', 'Impaga')
+	declare @id char(11) = (select id from ventas.Factura where idFactura = '111-11-1111')
+	declare @legajo int = (select top 1 legajo from recursosHumanos.Empleado)
+	select * from ventas.Factura where id = @id
+	exec ventas.modificarEmpleadoDeFactura @id = @id, @legajoEmp = @legajo
+	select * from ventas.Factura where id = @id
+rollback
+
+--MODIFICAR CLIENTE FACTURA
+--intentamos con parametros nulos
+exec ventas.modificarClienteDeFactura @id = null, @idCliente = null
+--intentamos con un id que no existe y empleado que no existe
+exec ventas.modificarClienteDeFactura @id = -1, @idCliente = -1
+--intentamos con una factura pagada
+exec ventas.modificarClienteDeFactura @id = 1, @idCliente = 1
+--modificamos el empleado que genera la factura
+begin transaction
+	insert into ventas.Factura(idFactura, estado) values('111-11-1111', 'Impaga')
+	declare @id char(11) = (select id from ventas.Factura where idFactura = '111-11-1111')
+	select * from ventas.Factura where id = @id
+	exec ventas.modificarClienteDeFactura @id = @id, @idCliente = 1
+	select * from ventas.Factura where id = @id
+rollback
+
+---***LINEA DE FACTURA***
+--MODIFICAR PRODUCTO DE LINEA DE FACTURA
+-- intentamos con parametros nulos
+exec ventas.modificarProductoLineaDeFactura @idLn = null, @idFactura = null, @idProd = null
+--intentamos con una linea, factura y producto inexistentes
+exec ventas.modificarProductoLineaDeFactura @idLn = -1, @idFactura = -1, @idProd = -1
+--intentamos con una factura pagada y una linea que no pertenece a esa factura
+exec ventas.modificarProductoLineaDeFactura @idLn = 1, @idFactura = 1, @idProd = 1
+--intentamos con un producto inexistente
+begin transaction
+	insert into ventas.Factura(idFactura) values('111-11-1111')
+	declare @idFactura int = (select id from ventas.Factura where idFactura = '111-11-1111')
+	insert into ventas.LineaDeFactura(idFactura)
+		values(@idFactura)
+	declare @idLn int = (select top 1 id from ventas.LineaDeFactura where idFactura = @idFactura)
+	exec ventas.modificarProductoLineaDeFactura @idLn = @idLn, @idFactura = @idFactura, @idProd = -1
+rollback
+--intentamos modificar el producto de una linea a un producto que tiene otra linea de la misma factura
+begin transaction
+	insert into ventas.Factura(idFactura) values('111-11-1111')
+	declare @idFactura int = (select id from ventas.Factura where idFactura = '111-11-1111')
+	insert into ventas.LineaDeFactura(idFactura, idProd)
+		values(@idFactura, 1)
+	insert into ventas.LineaDeFactura(idFactura, idProd)
+		values(@idFactura, 2)
+	declare @idLn int = (select top 1 id from ventas.LineaDeFactura where idFactura = @idFactura)
+	exec ventas.modificarProductoLineaDeFactura @idLn = @idLn, @idFactura = @idFactura, @idProd = 2
+rollback
+--modificamos el producto de una linea de una factura
+begin transaction
+	insert into ventas.Factura(idFactura) values('111-11-1111')
+	declare @idFactura int = (select id from ventas.Factura where idFactura = '111-11-1111')
+	insert into ventas.LineaDeFactura(idFactura, idProd, cantidad, precioUn)
+		values(@idFactura, 1, 3, 2)
+	declare @idLn int = (select top 1 id from ventas.LineaDeFactura where idFactura = @idFactura)
+	select * from ventas.LineaDeFactura where id = @idLn
+	exec ventas.modificarProductoLineaDeFactura @idLn = @idLn, @idFactura = @idFactura, @idProd = 2
+	select * from ventas.LineaDeFactura where id = @idLn
+rollback
+
+--MODIFICAR IDFACTURA DE LA LINEA DE FACTURA
+--intentamos con parametros nulos
+exec ventas.modificarIdFacturaLineaDeFactura @idLn = null, @idFactura = null
+--intentamos con parametros que no existen
+exec ventas.modificarIdFacturaLineaDeFactura @idLn = -1, @idFactura = -1
+--intentamos con una linea asociada con una factura pagada y una factura pagada
+exec ventas.modificarIdFacturaLineaDeFactura @idLn = 1, @idFactura = 1
+--intentamos con una linea que tiene un producto que ya se encuentra en una de las lineas
+--de la nueva factura
+begin transaction
+	insert into ventas.Factura(idFactura) values ('111-11-1111'), ('222-22-2222')
+	insert into ventas.LineaDeFactura(idFactura, idProd)
+		select id, 1 from ventas.Factura where idFactura in ('111-11-1111', '222-22-2222')
+	declare @idFactura1 int = (select id from ventas.Factura where idFactura = '111-11-1111')
+	declare @idLn int = (select id from ventas.LineaDeFactura where idFactura = @idFactura1 )
+	declare @idFactura2 int = (select id from ventas.Factura where idFactura = '222-22-2222')
+	exec ventas.modificarIdFacturaLineaDeFactura @idLn = @idLn, @idFactura = @idFactura2
+rollback
+--modificamos el idFactura de una linea
+begin transaction
+	insert into ventas.Factura(idFactura) values ('111-11-1111'), ('222-22-2222')
+	insert into ventas.LineaDeFactura(idFactura, idProd)
+		select id, 1 from ventas.Factura where idFactura in ('111-11-1111')
+	insert into ventas.LineaDeFactura(idFactura, idProd)
+		select id, 2 from ventas.Factura where idFactura in ('222-22-2222')
+	
+	declare @idFactura1 int = (select id from ventas.Factura where idFactura = '111-11-1111')
+	declare @idLn int = (select id from ventas.LineaDeFactura where idFactura = @idFactura1 )
+	declare @idFactura2 int = (select id from ventas.Factura where idFactura = '222-22-2222')
+
+	select * from ventas.LineaDeFactura where idFactura in (@idFactura1, @idFactura2)
+	exec ventas.modificarIdFacturaLineaDeFactura @idLn = @idLn, @idFactura = @idFactura2
+	select * from ventas.LineaDeFactura where idFactura in (@idFactura1, @idFactura2)
+rollback
+
+--MODIFICAR CANTIDAD DE UNA LINEA DE FACTURA
+--intentamos con parametros nulos
+exec ventas.modificarCantidadLineaDeFactura @idLn = null, @cantidad = null
+--intentamos con una linea inexistente y cantidad invalida
+exec ventas.modificarCantidadLineaDeFactura @idLn = -1, @cantidad = 0
+--intentamos con una linea asociada a una factura pagada	
+exec ventas.modificarCantidadLineaDeFactura @idLn = 1, @cantidad = 3
+--modificamos la cantidad de una linea de factura
+begin transaction
+	insert into ventas.Factura(idFactura) values ('111-11-1111')
+	declare @idFactura int = (select id from ventas.Factura where idFactura = '111-11-1111')
+	insert into ventas.LineaDeFactura(idFactura, idProd, precioUn, cantidad, subtotal) 
+		values (@idFactura, 1, 2.0, 2, 4)
+	declare @idLn int = (select id from ventas.LineaDeFactura where idFactura = @idFactura )
+	select * from ventas.LineaDeFactura where id = @idLn
+	exec ventas.modificarCantidadLineaDeFactura @idLn = @idLn, @cantidad = 3
+	select * from ventas.LineaDeFactura where id = @idLn
 rollback
