@@ -818,6 +818,20 @@ begin transaction
 	--restauramos los datos
 rollback
 
+--DAR DE ALTA CLIENTE EN BAJA
+--intentamos con parametros nulos
+exec clientes.darAltaClienteEnBaja null
+--intentamos con un cliente que no existe
+exec clientes.darAltaClienteEnBaja -1
+--damos de alta un cliente que esta en baja
+begin transaction
+	update clientes.Cliente set activo = 0 where id = 1
+	select * from clientes.Cliente where id = 1
+	exec clientes.darAltaClienteEnBaja 1
+	select * from clientes.Cliente where id = 1
+rollback
+
+
 --***FACTURA***
 --MODIFICAR EL IDFACTURA
 --intentamos con parametros nulos

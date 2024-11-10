@@ -1255,6 +1255,22 @@ begin
 end
 go
 
+create or alter proc clientes.darAltaClienteEnBaja
+	@id int
+as
+begin
+	if @id is null or not exists(select 1 from clientes.Cliente where id = @id)
+	begin
+		raiserror('No se ingreso el cliente o no existe.', 16, 1)
+		return
+	end
+
+	update clientes.Cliente
+		set activo = 1
+	where id = @id
+end
+go
+
 --FACTURA
 --modificar el id de la factura
 create or alter proc ventas.modificarIdFactura
@@ -1600,4 +1616,5 @@ begin
 	where id = @idLn
 
 end
+
 --COMPROBANTE

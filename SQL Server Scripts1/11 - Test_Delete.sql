@@ -87,7 +87,7 @@ select * from comprobantes.MedioDePago where id = 1
 
 update comprobantes.MedioDePago set activo = 1 where id = 1
 
---CLIENTE
+--TIPO CLIENTE
 --borrar un tipo de cliente (para la prueba lo usaremos en conjunto con clientes.cambiarClientesDeUnTipoAOtro ya que 
 --para borrar un tipo de cliente ningun cliente debe pertenecer al mismo, para esto primero migraremos los clientes que pertenecen al tipo que 
 --va a ser borrado y luego borraremos el tipo) 
@@ -111,3 +111,64 @@ select * from clientes.TipoCliente
 --restauramos los datos a como estaban antes
 rollback
 
+--CLIENTE
+--intentamos con parametros nulo
+exec clientes.bajaCliente null
+--intentamos con un cliente que no existe
+exec clientes.bajaCliente -1
+--damos de baja un cliente, el campo activo pasa a ser 0
+begin transaction
+	select * from clientes.Cliente where id = 1
+	exec clientes.bajaCliente 1
+	select * from clientes.Cliente where id = 1
+rollback
+
+--FACTURA
+--intentamos con parametros nulos
+exec ventas.anularFactura null
+--intentamos con una factura inexistente
+exec ventas.anularFactura -1
+--intentamos con una factura pagada
+exec ventas.anularFactura 1
+--anulamos una factura
+begin transaction
+	insert into ventas.Factura(idFactura) values('111-11-1111')
+	declare @id int = (select id from ventas.Factura where idFactura = '111-11-1111')
+	select * from ventas.Factura where id = @id
+	exec ventas.anularFactura @id
+	select * from ventas.Factura where id = @id
+rollback
+
+--LINEA DE FACTURA
+--intentamos con parametros nulos
+exec ventas.anularLineaFactura null
+--intentamos con una linea de factura que no existe
+exec ventas.anularLineaFactura -1
+--intentamos con una linea asociada a una factura pagada
+exec ventas.anularLineaFactura 1
+--anulamos una linea de factura
+begin transaction
+	insert into ventas.Factura(idFactura) values('111-11-1111')
+	declare @idFa int = (select id from ventas.Factura where idFactura = '111-11-1111')
+	insert into ventas.LineaDeFactura(idFactura) values (@idFa)
+	declare @idLn int = (select id from ventas.LineaDeFactura where idFactura = @idFa)
+	select * from ventas.LineaDeFactura where id = @idLn
+	exec ventas.anularLineaFactura @idLn
+	select * from ventas.LineaDeFactura where id = @idLn
+rollback
+
+--COMPROBANTE
+--intentamos con parametros nulos
+exec comprobantes.anularComprobante null
+--intentamos con un comprobante que no existe
+exec comprobantes.anularComprobante -1
+--anulamos un comprobante
+begin transaction
+	declare @idFactura int = (select top 1 id from ventas.Factura)
+	select * from ventas.Factura where id = @idFactura
+	declare @idComprobante int = (select id from comprobantes.Comprobante where idFactura = @idFactura)
+	select * from comprobantes.Comprobante where idFactura = @idFactura
+	exec comprobantes.anularComprobante @idComprobante
+	select * from ventas.Factura where id = @idFactura
+	select * from comprobantes.Comprobante where idFactura = @idFactura
+rollback

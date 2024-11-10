@@ -214,6 +214,7 @@ begin
 		apellido varchar(50),
 		ciudad varchar(20),
 		genero char(6) check(genero in ('Male', 'Female')),
+		activo bit default 1,
 		constraint FK_TipoCliente foreign key (idTipo) references clientes.TipoCliente(id)
 	)
 end

@@ -172,8 +172,8 @@ begin
 	where id = @idMp
 end
 go
---TIPOCLIENTE
---CLIENTE
+
+--TIPO CLIENTE
 --Borrar un tipo de cliente (pensado para usarse en conjunto con clientes.cambiarClientesDeUnTipoAOtro)
 create or alter procedure clientes.borrarTipoDeCliente 
 @idTipoBr int
@@ -194,6 +194,97 @@ begin
 	where id=@idTipoBr
 end
 go
+
+--CLIENTE
+create or alter proc clientes.bajaCliente
+	@id int
+as
+begin
+	if @id is null or not exists(select 1 from clientes.Cliente where id = @id)
+	begin
+		raiserror('No se ingreso el cliente o no existe.', 16, 1)
+		return
+	end
+
+	update clientes.Cliente
+		set activo = 0
+	where id = @id
+end
+go
+
 --FACTURA
+create or alter proc ventas.anularFactura
+	@id int
+as
+begin
+	declare @error varchar(200) = ''
+	if @id is null
+		set @error=@error+'No se ingreso el id de la factura'+char(13)+char(10)
+	else
+		if not exists (select 1 from ventas.Factura where id = @id)
+			set @error=@error+'La factura ingresada no existe'+char(13)+char(10)
+		else
+			if (select estado from ventas.Factura where id = @id) = 'Pagada'
+				set @error=@error+'La factura ingresada se encuentra pagada'+char(13)+char(10)
+
+	if @error <> ''
+	begin
+		raiserror(@error, 16, 1)
+		return
+	end
+
+	delete from ventas.Factura where id = @id
+end
+go
+
 --LINEAFACTURA
+create or alter proc ventas.anularLineaFactura
+	@id int
+as
+begin
+	declare @error varchar(200) = ''
+	if @id is null
+		set @error=@error+'No se ingreso el id de la linea de factura'+char(13)+char(10)
+	else
+		if not exists (select 1 from ventas.LineaDeFactura where id = @id)
+			set @error=@error+'La linea de factura ingresada no existe'+char(13)+char(10)
+		else
+			if (select estado from ventas.Factura f join ventas.LineaDeFactura l on f.id = l.idFactura
+				where l.id = @id) = 'Pagada'
+				set @error=@error+'La linea de factura ingresada, se encuentra asociada a una factura pagada'+char(13)+char(10)
+
+	if @error <> ''
+	begin
+		raiserror(@error, 16, 1)
+		return
+	end
+
+	delete from ventas.LineaDeFactura where id = @id
+end
+go
+
 --COMPROBANTE
+create or alter proc comprobantes.anularComprobante
+	@id int
+as
+begin
+	declare @error varchar(200) = ''
+	if @id is null
+		set @error=@error+'No se ingreso el id del comprobante'+char(13)+char(10)
+	else
+		if not exists (select 1 from comprobantes.Comprobante where id = @id)
+			set @error=@error+'El comprobante ingresado no existe'+char(13)+char(10)
+	
+	if @error <> ''
+	begin
+		raiserror(@error, 16, 1)
+		return
+	end
+
+	declare @idFactura int = (select idFactura from comprobantes.Comprobante where id = @id)
+	update ventas.Factura
+		set estado = 'Impaga'
+	where id = @idFactura
+
+	delete from comprobantes.Comprobante where id = @id
+end
