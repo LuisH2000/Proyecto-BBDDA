@@ -1377,7 +1377,7 @@ end
 go
 
 --modificar la hora
-create or alter proc ventas.modificarFechaFactura
+create or alter proc ventas.modificarHoraFactura
 	@id int,
 	@hora time
 as
@@ -1616,5 +1616,170 @@ begin
 	where id = @idLn
 
 end
+go
 
 --COMPROBANTE
+--modificar el idPago
+create or alter proc comprobantes.cambiarIdPagoComprobante
+	@id int,
+	@nvoIdPago char(23)
+as
+begin
+	declare @error varchar(200) = ''
+
+	if @id is null 
+		set @error=@error+'No se ingreso el id del comprobante'+char(13)+char(10)
+	else
+		if not exists (select 1 from comprobantes.Comprobante where id = @id)
+			set @error=@error+'El id del comprobante ingresado, no existe'+char(13)+char(10)
+		else
+			if (select tipoComprobante from comprobantes.Comprobante where id = @id) = 'Nota de Credito'
+				set @error=@error+'El comprobante ingresado es una nota de credito, no se puede modificar el id de pago porque no tiene'+char(13)+char(10)
+			else
+				if exists (select 1 from comprobantes.Comprobante where idPago = @nvoIdPago)
+					set @error=@error+'El id de pago ingresado ya pertenece a otro comprobante de pago'+char(13)+char(10)
+
+
+	if @nvoIdPago is null or @nvoIdPago = ''
+		set @error=@error+'No se ingreso el nuevo id de pago'+char(13)+char(10)
+
+	if @error <> ''
+	begin
+		raiserror(@error, 16, 1)
+		return
+	end
+
+	update comprobantes.Comprobante
+		set idPago = @nvoIdPago
+	where id = @id
+end
+go
+
+--modificar el medio de pago de un comprobante
+create or alter proc comprobantes.modificarMedioPagoDeComprobante
+	@id int,
+	@idMedPago int
+as
+begin
+	declare @error varchar(200) = ''
+
+	if @id is null 
+		set @error=@error+'No se ingreso el id del comprobante'+char(13)+char(10)
+	else
+		if not exists (select 1 from comprobantes.Comprobante where id = @id)
+			set @error=@error+'El id del comprobante ingresado no existe'+char(13)+char(10)
+		else
+			if (select tipoComprobante from comprobantes.Comprobante where id = @id) = 'Nota de Credito'
+				set @error=@error+'El comprobante ingresado es una nota de credito, no se puede modificar el medio de pago porque no tiene'+char(13)+char(10)
+	
+	if @idMedPago is null
+		set @error=@error+'No se ingreso el nuevo medio de pago'+char(13)+char(10)
+	else
+		if not exists (select 1 from comprobantes.MedioDePago where id = @idMedPago)
+			set @error=@error+'El medio de pago ingresado no existe'+char(13)+char(10)
+
+	if @error <> ''
+	begin
+		raiserror(@error, 16, 1)
+		return
+	end
+
+	update comprobantes.Comprobante
+		set idMedPago = @idMedPago
+	where id = @id
+end
+go
+
+--modificar la factura asociada al comprobante 
+create or alter proc comprobantes.modificarFacturaDeComprobante
+	@id int,
+	@nvoIdFactura int
+as
+begin
+	declare @error varchar(200) = ''
+
+	if @id is null 
+		set @error=@error+'No se ingreso el id del comprobante'+char(13)+char(10)
+	else
+		if not exists (select 1 from comprobantes.Comprobante where id = @id)
+			set @error=@error+'El id del comprobante ingresado no existe'+char(13)+char(10)
+	
+	if @nvoIdFactura is null
+		set @error=@error+'No se ingreso el id de la factura'+char(13)+char(10)
+	else
+		if not exists (select 1 from ventas.Factura where id = @nvoIdFactura)
+			set @error=@error+'La factura ingresada no existe'+char(13)+char(10)
+
+	if (select tipoComprobante from comprobantes.Comprobante where id = @id) = 'Factura'
+		if (select estado from ventas.Factura where id = @nvoIdFactura) = 'Pagada'
+			set @error=@error+'La nueva factura ingresada ya se encuentra pagada, por lo que ya tiene un comprobante de pago asociado 
+			y no se le puede asociar otro comprobante de pago'+char(13)+char(10)
+
+	if @error <> ''
+	begin
+		raiserror(@error, 16, 1)
+		return
+	end
+
+	update comprobantes.Comprobante
+		set idFactura = @nvoIdFactura
+	where id = @id
+	
+end
+go
+
+--modificar la fecha del comprobante
+create or alter proc ventas.modificarFechaComprobante
+	@id int,
+	@fecha date
+as
+begin
+	declare @error varchar(200) = ''
+	if @id is null
+		set @error=@error+'No ingreso el id del comprobante'+char(13)+char(10)
+	else
+		if not exists (select 1 from comprobantes.Comprobante where id = @id)
+			set @error=@error+'El comprobante ingresado no existe'+char(13)+char(10)
+
+	if @fecha is null
+		set @error=@error+'No se ingreso la fecha'+char(13)+char(10)
+
+	if @error <> ''
+	begin
+		raiserror(@error, 16, 1)
+		return
+	end
+
+	update comprobantes.Comprobante
+		set fecha = @fecha
+	where id = @id
+end
+go
+
+--modificar la hora del comprobante
+create or alter proc ventas.modificarHoraComprobante
+	@id int,
+	@hora time
+as
+begin
+	declare @error varchar(200) = ''
+	if @id is null
+		set @error=@error+'No ingreso el id del comprobante'+char(13)+char(10)
+	else
+		if not exists (select 1 from comprobantes.Comprobante where id = @id)
+			set @error=@error+'El comprobante ingresado no existe'+char(13)+char(10)
+
+	if @hora is null
+		set @error=@error+'No se ingreso la hora'+char(13)+char(10)
+
+	if @error <> ''
+	begin
+		raiserror(@error, 16, 1)
+		return
+	end
+
+	update comprobantes.Comprobante
+		set hora = @hora
+	where id = @id
+end
+go

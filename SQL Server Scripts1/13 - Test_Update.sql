@@ -844,11 +844,11 @@ exec ventas.modificarIdFactura @id = -1, @idFactura = '750-67-8428'
 --modificamos el idfactura de una factura impaga
 begin transaction
 	insert into ventas.Factura(idFactura, estado) values('111-11-1111', 'Impaga')
-	declare @id char(11) = (select id from ventas.Factura where idFactura = '111-11-1111')
+	declare @id int = (select id from ventas.Factura where idFactura = '111-11-1111')
 	select * from ventas.Factura where id = @id
 	exec ventas.modificarIdFactura @id = @id, @idFactura = '222-22-2222'
 
-	declare @id char(11) = (select id from ventas.Factura where idFactura = '222-22-2222')
+	set @id = (select id from ventas.Factura where idFactura = '222-22-2222')
 	select * from ventas.Factura where id = @id
 rollback
 
@@ -862,7 +862,7 @@ exec ventas.modificarTipoFactura @id = 1, @tipoFactura = 'A'
 --modificamos el tipo de una factura
 begin transaction
 	insert into ventas.Factura(idFactura, estado) values('111-11-1111', 'Impaga')
-	declare @id char(11) = (select id from ventas.Factura where idFactura = '111-11-1111')
+	declare @id int = (select id from ventas.Factura where idFactura = '111-11-1111')
 	select * from ventas.Factura where id = @id
 	exec ventas.modificarTipoFactura @id = @id, @tipoFactura = 'A'
 	select * from ventas.Factura where id = @id
@@ -878,7 +878,7 @@ exec ventas.modificarFechaFactura @id = 1, @fecha = '2020-01-01'
 --modificamos la fecha de una factura
 begin transaction
 	insert into ventas.Factura(idFactura, estado) values('111-11-1111', 'Impaga')
-	declare @id char(11) = (select id from ventas.Factura where idFactura = '111-11-1111')
+	declare @id int = (select id from ventas.Factura where idFactura = '111-11-1111')
 	select * from ventas.Factura where id = @id
 	exec ventas.modificarFechaFactura @id = @id, @fecha = '2020-01-01'
 	select * from ventas.Factura where id = @id
@@ -886,17 +886,17 @@ rollback
 
 --MODIFICAR LA HORA DE LA FACTURA
 --intentamos com parametros nulos
-exec ventas.modificarFechaFactura @id = null, @hora = null
+exec ventas.modificarHoraFactura @id = null, @hora = null
 --intentamos con un id que no existe
-exec ventas.modificarFechaFactura @id = -1, @hora = '12:03'
+exec ventas.modificarHoraFactura @id = -1, @hora = '12:03'
 --intentamos con una facutura pagada
-exec ventas.modificarFechaFactura @id = 1, @hora = '12:03'
+exec ventas.modificarHoraFactura @id = 1, @hora = '12:03'
 --modificamos la hora de una factura
 begin transaction
 	insert into ventas.Factura(idFactura, estado) values('111-11-1111', 'Impaga')
-	declare @id char(11) = (select id from ventas.Factura where idFactura = '111-11-1111')
+	declare @id int = (select id from ventas.Factura where idFactura = '111-11-1111')
 	select * from ventas.Factura where id = @id
-	exec ventas.modificarFechaFactura @id = @id, @hora = '12:03'
+	exec ventas.modificarHoraFactura @id = @id, @hora = '12:03'
 	select * from ventas.Factura where id = @id
 rollback
 
@@ -911,8 +911,9 @@ exec ventas.modificarEmpleadoDeFactura @id = 1, @legajoEmp = @legajo
 --modificamos el empleado que genera la factura
 begin transaction
 	insert into ventas.Factura(idFactura, estado) values('111-11-1111', 'Impaga')
-	declare @id char(11) = (select id from ventas.Factura where idFactura = '111-11-1111')
-	declare @legajo int = (select top 1 legajo from recursosHumanos.Empleado)
+	declare @id int = (select id from ventas.Factura where idFactura = '111-11-1111')
+	insert into recursosHumanos.Empleado(legajo) values(123)
+	declare @legajo int = 123
 	select * from ventas.Factura where id = @id
 	exec ventas.modificarEmpleadoDeFactura @id = @id, @legajoEmp = @legajo
 	select * from ventas.Factura where id = @id
@@ -921,16 +922,18 @@ rollback
 --MODIFICAR CLIENTE FACTURA
 --intentamos con parametros nulos
 exec ventas.modificarClienteDeFactura @id = null, @idCliente = null
---intentamos con un id que no existe y empleado que no existe
+--intentamos con un id que no existe y cliente que no existe
 exec ventas.modificarClienteDeFactura @id = -1, @idCliente = -1
 --intentamos con una factura pagada
 exec ventas.modificarClienteDeFactura @id = 1, @idCliente = 1
---modificamos el empleado que genera la factura
+--modificamos el cliente que genera la factura
 begin transaction
 	insert into ventas.Factura(idFactura, estado) values('111-11-1111', 'Impaga')
-	declare @id char(11) = (select id from ventas.Factura where idFactura = '111-11-1111')
+	declare @id int = (select id from ventas.Factura where idFactura = '111-11-1111')
+	insert into clientes.Cliente(nombre, apellido) values('Homero', 'Simpson')
+	declare @idCliente int = (select top 1 id from clientes.Cliente order by id desc)
 	select * from ventas.Factura where id = @id
-	exec ventas.modificarClienteDeFactura @id = @id, @idCliente = 1
+	exec ventas.modificarClienteDeFactura @id = @id, @idCliente = @idCliente
 	select * from ventas.Factura where id = @id
 rollback
 
@@ -1026,4 +1029,108 @@ begin transaction
 	select * from ventas.LineaDeFactura where id = @idLn
 	exec ventas.modificarCantidadLineaDeFactura @idLn = @idLn, @cantidad = 3
 	select * from ventas.LineaDeFactura where id = @idLn
+rollback
+
+---***COMPROBANTE***
+--MODIFICAR IDPAGO COMPROBANTE
+--intentamos con parametros nulos
+exec comprobantes.cambiarIdPagoComprobante @id = null, @nvoIdPago = null
+--intentamos con un id que no existe y un idpago vacio
+exec comprobantes.cambiarIdPagoComprobante @id = -1, @nvoIdPago = '                 '
+--intentamos modificar el id de pago de una nota de credito
+begin transaction
+	insert into comprobantes.Comprobante(tipoComprobante) values('Nota de Credito')
+	declare @idComp int = (select top 1 id from comprobantes.Comprobante order by id desc)
+	exec comprobantes.cambiarIdPagoComprobante @id = @idComp, @nvoIdPago = '123'
+rollback
+--intentamos modificar a un id de pago asociado a otro comprobante de pago
+begin transaction
+	insert into comprobantes.Comprobante(tipoComprobante, idPago) values('Factura', '456')
+	insert into comprobantes.Comprobante(tipoComprobante, idPago) values('Factura', '123')
+	declare @idComp int = (select id from comprobantes.Comprobante where idPago = '456')
+	exec comprobantes.cambiarIdPagoComprobante @id = @idComp, @nvoIdPago = '123'
+rollback
+--modificamos el id de pago
+begin transaction
+	insert into comprobantes.Comprobante(tipoComprobante, idPago) values('Factura', '456')
+	declare @idComp int = (select top 1 id from comprobantes.Comprobante order by id desc)
+	select * from comprobantes.Comprobante where id = @idComp
+	exec comprobantes.cambiarIdPagoComprobante @id = @idComp, @nvoIdPago = '123'
+	select * from comprobantes.Comprobante where id = @idComp
+rollback
+
+--MODIFICAR MEDIO DE PAGO DE UN COMPROBANTE
+--intentamos con parametros nulos
+exec comprobantes.modificarMedioPagoDeComprobante @id = null, @idMedPago = null
+--intentamos con un id que no existe y un medio de pago que no existe
+exec comprobantes.modificarMedioPagoDeComprobante @id = -1, @idMedPago = -1 
+--intentamos modificar el id de pago de una nota de credito
+begin transaction
+	insert into comprobantes.Comprobante(tipoComprobante) values('Nota de Credito')
+	insert into comprobantes.MedioDePago(nombreEsp) values('Transferencia')
+	declare @idComp int = (select top 1 id from comprobantes.Comprobante order by id desc)
+	declare @idMedPago int = (select id from comprobantes.MedioDePago where nombreEsp = 'Transferencia')
+	exec comprobantes.modificarMedioPagoDeComprobante @id = @idComp, @idMedPago = @idMedPago
+rollback
+--modificamos el medio de pago
+begin transaction
+	insert into comprobantes.Comprobante(tipoComprobante) values('Factura')
+	insert into comprobantes.MedioDePago(nombreEsp) values('Transferencia')
+	declare @idComp int = (select top 1 id from comprobantes.Comprobante order by id desc)
+	declare @idMedPago int = (select id from comprobantes.MedioDePago where nombreEsp = 'Transferencia')
+	select * from comprobantes.Comprobante where id = @idComp
+	exec comprobantes.modificarMedioPagoDeComprobante @id = @idComp, @idMedPago = @idMedPago
+	select * from comprobantes.Comprobante where id = @idComp
+rollback
+
+--MODIFICAR LA FACTURA DE UN COMPROBANTE
+--intentamos con parametros nulos
+exec comprobantes.modificarFacturaDeComprobante @id = null, @nvoIdFactura = null
+--intentamos con un id que no existe y una factura que no existe
+exec comprobantes.modificarFacturaDeComprobante @id = -1, @nvoIdFactura = -1
+--intentamos modificar la factura de un comprobante de pago a otra factura que ya tiene un comprobante de pago
+begin transaction
+	insert into comprobantes.Comprobante(tipoComprobante) values('Factura')
+	insert into ventas.Factura(idFactura, estado) values('111-11-1111', 'Pagada')
+	declare @idComp int = (select top 1 id from comprobantes.Comprobante order by id desc)
+	declare @idFactura int = (select id from ventas.Factura where idFactura = '111-11-1111')
+	exec comprobantes.modificarFacturaDeComprobante @id = @idComp, @nvoIdFactura = @idFactura
+rollback
+--modificamos la factura de un comprobante
+begin transaction
+	insert into comprobantes.Comprobante(tipoComprobante) values('Factura')
+	insert into ventas.Factura(idFactura) values('111-11-1111')
+	declare @idComp int = (select top 1 id from comprobantes.Comprobante order by id desc)
+	declare @idFactura int = (select id from ventas.Factura where idFactura = '111-11-1111')
+	select * from comprobantes.Comprobante where id = @idComp
+	exec comprobantes.modificarFacturaDeComprobante @id = @idComp, @nvoIdFactura = @idFactura
+	select * from comprobantes.Comprobante where id = @idComp
+rollback
+
+--MODIFICAR FECHA COMPROBANTE
+--intentamos con parametros nulos
+exec ventas.modificarFechaComprobante @id = null, @fecha = null
+--intentamos con un id que no existe
+exec ventas.modificarFechaComprobante @id = -1, @fecha = '2020-01-01'
+--modificamos la fecha de un comprobante
+begin transaction
+	insert into comprobantes.Comprobante(idPago) values('123')
+	declare @id int = (select top 1 id from comprobantes.Comprobante order by id desc)
+	select * from comprobantes.Comprobante where id = @id
+	exec ventas.modificarFechaComprobante @id = @id, @fecha = '2020-01-01'
+	select * from comprobantes.Comprobante where id = @id
+rollback
+
+--MODIFICAR LA HORA COMPROBANTE
+--intentamos com parametros nulos
+exec ventas.modificarHoraComprobante @id = null, @hora = null
+--intentamos con un id que no existe
+exec ventas.modificarHoraComprobante @id = -1, @hora = '12:03'
+--modificamos la hora de un comprobante
+begin transaction
+	insert into comprobantes.Comprobante(idPago) values('123')
+	declare @id int = (select top 1 id from comprobantes.Comprobante order by id desc)
+	select * from comprobantes.Comprobante where id = @id
+	exec ventas.modificarHoraComprobante @id = @id, @hora = '12:03'
+	select * from comprobantes.Comprobante where id = @id
 rollback
