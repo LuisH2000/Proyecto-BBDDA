@@ -586,6 +586,7 @@ begin
 	declare @error varchar(max) = ''
 	declare @idFactura int
 	declare @total decimal(15,2)
+	declare @idCash int
 	set @idPago = ltrim(rtrim(@idPago))
 	set @factura = ltrim(rtrim(@factura))
 	--verificamos que el id de pago no este vacio
@@ -603,7 +604,8 @@ begin
 		set @error=@error+'La factura ingresada no existe'+CHAR(13)+CHAR(10)
 	--verificamos que el id de pago no exista en caso que el medio de pago no sea cash
 	--si es cash, no tiene idPago
-	if (select id from comprobantes.MedioDePago where nombreIng = 'Cash') <> @mp
+	set @idCash=(select id from comprobantes.MedioDePago where nombreIng = 'Cash')
+	if @idCash is null or @idCash<>@mp
 	begin
 		if exists (select 1 from comprobantes.Comprobante where idPago = @idPago)
 		begin
@@ -751,16 +753,87 @@ begin
 		raiserror(@error,16,1)
 		return
 	end
-	--insertamos el cliente 
-	--Nota: realmente no estoy seguro de como manejamos el tema de los duplicados aca, si acaso se permite ingresar clientes con los mismos datos (ya que 
-	--efectivamente no podemos distinguirlos entre si, entonces, quitar el if. El if simplemente evita insertar si ya existe un cliente que tenga los
-	--datos que se quieren insertar, estariamos viendo a los clientes como un subconjunto de clientes que comparten nombre, apellido, tipo, ciudad y genero
-	--y no como clientes individuales)
-	if not exists(select 1 from clientes.cliente where nombre=@nombre and apellido=@apellido and idTipo=@idTipo and ciudad=@ciudad and genero=@genero)
-	begin
-		insert into clientes.cliente (idTipo,nombre,apellido,ciudad,genero)
-		values(@idTipo,@nombre,@apellido,@ciudad,@genero)
-	end
+	--nota: quite el if, tratar los clientes como conjuntos no tiene sentido, se identifica c/u por id.
+	insert into clientes.cliente (idTipo,nombre,apellido,ciudad,genero)
+	values(@idTipo,@nombre,@apellido,@ciudad,@genero)
 end
 go
 
+--SP Para la creacion de datos de prueba para los scripts de testing
+create or alter procedure testing.crearDatosDePrueba
+as
+begin
+--CARGA DE DATOS DE PRUEBA, EJECUTAR ESTE BLOQUE PRIMERO
+--carga de sucursales
+begin try
+	INSERT INTO sucursales.sucursal (ciudad, direccion, horario, telefono,activo) 
+	VALUES 
+		(
+			'Lomas de Zamora', 
+			'Torquinst 829, B1765 Lomas, prov bs as, arg', 
+			'L a V 8 a. m.–9 p. m. S y D 9 a. m.-8 p. m.', 
+			'5555-5556',1
+		),
+		 (
+			'Retiro', 
+			'Lavalle 9283, B9231, prov bs as, arg', 
+			'L a V 8 a. m.–9 p. m. S y D 9 a. m.-8 p. m.', 
+			'5555-5589',1
+		 );
+	--carga linea de producto
+	insert into catalogo.LineaProducto (lineaProd)
+	values('Bazar'),('Automotriz')
+	--carga categoria
+	insert into catalogo.categoria (categoria,idLineaProd)
+	values('Platos chinos',1),('Bujias',2)
+	--carga producto
+	insert into catalogo.producto (idProd, nombre, precio, precioUSD, precioRef, unidadRef, fecha, proveedor, cantXUn,activo)
+	values(2,'Plato Funshwei',NULL,30,NULL,NULL,getdate(),'Moonton',NULL,1)
+	,(3,'Bujia Hescher',4000,NULL,NULL,NULL,getdate(),NULL,NULL,1)
+	--carga tabla perteneceA
+	insert into catalogo.PerteneceA (idCategoria,idProd)
+	values (1,1),(2,2)
+	--carga tipo de clientes
+	insert into clientes.TipoCliente (tipo)
+	values('Bronze'),('Silver'),('Gold')
+	--carga clientes
+	insert into clientes.Cliente (idTipo, nombre, apellido, ciudad, genero, activo)
+	values(1,'Pollito','Perez','Hurlingham','Male',1),
+	(2,'Juanita','Perez','Varela','Female',1),
+	(3,'Ramon','Valdez','Claypole','Male',1)
+	--carga cargo
+	insert into recursosHumanos.cargo (cargo)
+	values('Barrendero'),('Conserje'),('Rey de la limpieza')
+	--carga de empleados
+	insert into recursosHumanos.Empleado (legajo,nombre,apellido,dni,direccion,emailPer,emailEmp,cuil,cargo,idSucursal,turno,activo)
+	values (1,'Juan','Valdez',32789304,'Los patos 123','juanvaldez@gmail.com','juanvaldez@empresa.com',NULL,1,1,'TM',1),
+	(2,'Fernando','Valdez',52734305,'Los gatos 123','fernandovaldez@gmail.com','fernandovaldez@empresa.com',NULL,2,2,'TT',1),
+	(3,'Emilio','Mercedes',14068092,'Los carpinchos 123','emiliomercedes@gmail.com','emiliomercedes@empresa.com',NULL,3,1,'TT',1)
+	--carga de medio de pago
+	insert into comprobantes.MedioDePago (nombreIng,nombreEsp,activo)
+	values('Bitcoin','Bitcoin',1),
+	('Chachos','Chachos', 1)
+	--carga de factura y linea de producto
+	declare @compra1 tablaProductosIdCant
+	insert into @compra1
+	values(1,2),(2,1)
+	exec ventas.insertarFactura '111-11-1111','A',1,1,@compra1
+	delete from @compra1;
+	insert into @compra1
+	values(1,1),(2,4)
+	exec ventas.insertarFactura '222-22-2222','B',2,2,@compra1
+	delete from @compra1;
+	insert into @compra1
+	values(1,4),(2,1)
+	exec ventas.insertarFactura '333-33-3333','C',3,3,@compra1
+--carga de comprobantes
+	exec comprobantes.insertarComprobante '2323-2323-2323-2323',1,'111-11-1111'
+	exec comprobantes.insertarComprobante '2323-9321-1293-2321',2,'222-22-2222'
+	exec comprobantes.insertarComprobante '9323-2321-9923-8744',2,'333-33-3333'
+end try
+begin catch
+	raiserror('Este SP ya se ejecuto previamente por lo que los datos ya se encuentran cargados, no hace falta volver a ejecutar este SP.',16,1)
+	return
+end catch
+end
+go

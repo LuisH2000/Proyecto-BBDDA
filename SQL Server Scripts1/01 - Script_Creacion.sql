@@ -88,6 +88,12 @@ begin
 end
 go
 
+if not exists (select * from sys.schemas where name = 'testing')
+begin
+	exec('create schema testing')
+end
+go
+
 if not exists (select * from information_schema.tables where
 	table_schema = 'sucursales' and table_name = 'Sucursal')
 begin

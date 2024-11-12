@@ -754,6 +754,21 @@ begin
 	where id = @idMp
 end
 go
+
+create or alter proc comprobantes.darAltaMedioDePagoEnBaja
+@idMp int
+as
+begin
+	if @idMp is null or not exists(select 1 from comprobantes.MedioDePago where id=@idMp)
+	begin
+		raiserror('No se ingreso un medio de pago o no existe',16,1)
+		return
+	end
+	update comprobantes.MedioDePago
+	set activo=1
+	where id=@idMp
+end
+go
 --***PRODUCTO***
 create or alter proc catalogo.modificarPrecioProducto
 	@idProd int,
@@ -1562,7 +1577,7 @@ begin
 		else
 		if (select estado from ventas.Factura f join ventas.LineaDeFactura l on l.idFactura = f.id
 			where l.id = @idLn) = 'Pagada'
-			set @error=@error+'La linea de factura que quiere cambiar, esta asociada a una facutra pagada'+char(13)+char(10)
+			set @error=@error+'La linea de factura que quiere cambiar, esta asociada a una factura pagada'+char(13)+char(10)
 	
 	if @error <> ''
 	begin
