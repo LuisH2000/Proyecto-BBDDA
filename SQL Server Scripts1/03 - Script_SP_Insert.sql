@@ -398,7 +398,7 @@ begin
 			set @error=@error+'La categoria ingresada no existe. Agreguela primero usando catalogo.insertarLineaProductoYCategoria y luego cargue este producto.'+CHAR(13)+CHAR(10)
 	end
 	--verificamos que la combinacion de idProd, nombre y precio sean unicos
-	if exists (select 1 from catalogo.Producto where idProd=@idProd and nombre=@nombre and precio=@precio)
+	if exists (select 1 from catalogo.Producto where idProd=@idProd and nombre=@nombre and (precio=@precio or precioUSD=@precioUSD))
 		set @error=@error+'El producto ingresado ya se encuentra registrado.'+CHAR(13)+CHAR(10)
 	--verificamos si hubo algun error
 	if @error<>''
@@ -653,7 +653,7 @@ begin
 	if @idProd is null
 		set @error = @error + 'No se ingreso el id del producto' +CHAR(13)+CHAR(10)
 	if @idCategoria is null
-		set @error = @error + 'No se ingreso el id d la categoria' +CHAR(13)+CHAR(10)
+		set @error = @error + 'No se ingreso el id de la categoria' +CHAR(13)+CHAR(10)
 	else
 	begin
 		if not exists (select 1 from catalogo.Categoria where id = @idCategoria)
@@ -785,7 +785,7 @@ begin try
 	values('Bazar'),('Automotriz')
 	--carga categoria
 	insert into catalogo.categoria (categoria,idLineaProd)
-	values('Platos chinos',1),('Bujias',2)
+	values('Platos_chinos',1),('Bujias',2)
 	--carga producto
 	insert into catalogo.producto (idProd, nombre, precio, precioUSD, precioRef, unidadRef, fecha, proveedor, cantXUn,activo)
 	values(2,'Plato Funshwei',NULL,30,NULL,NULL,getdate(),'Moonton',NULL,1)
@@ -812,7 +812,8 @@ begin try
 	--carga de medio de pago
 	insert into comprobantes.MedioDePago (nombreIng,nombreEsp,activo)
 	values('Bitcoin','Bitcoin',1),
-	('Chachos','Chachos', 1)
+	('Chachos','Chachos', 1),
+	('Cash','Efectivo',1)
 	--carga de factura y linea de producto
 	declare @compra1 tablaProductosIdCant
 	insert into @compra1

@@ -1,5 +1,8 @@
 use [Com5600G13]
 go
+--CARGA INICIAL DE DATOS (ejecutar el SP, solo hace falta hacerlo una vez, si ya lo ejecuto previamente en otro script ignore este paso)
+exec testing.crearDatosDePrueba
+
 --***SUCURSAL***
 -- Probamos insertar valores nulos o vacios, nos deberia aparecer mensajes de errores
 exec sucursales.insertarSucursal null, null, null, null
@@ -9,13 +12,17 @@ exec sucursales.insertarSucursal ' ', '', '       ', ' '
 exec sucursales.insertarSucursal 'La Matanza', 'AV. Don Bosco', 'L a V: 8 - 20, S y D: 10 - 20', '151111-1111'
 
 -- Probamos insertar una direccion y ciudad en donde ya existe una sucursal
-exec sucursales.insertarSucursal 'San Justo', 'Av. Brig. Gral. Juan Manuel de Rosas 3634, B1754 San Justo, Provincia de Buenos Aires', 'L a V: 8 - 20, S y D: 10 - 20', '1111-1111'
--- Probamos una direccion que existe pero en otra ciudad
-exec sucursales.insertarSucursal 'La Matanza', 'Av. Brig. Gral. Juan Manuel de Rosas 3634, B1754 San Justo, Provincia de Buenos Aires', 'L a V: 8 - 20, S y D: 10 - 20', '1111-1111'
+exec sucursales.insertarSucursal 'Lomas de Zamora', 'Torquinst 829, B1765 Lomas, prov bs as, arg', 'L a V: 8 - 20, S y D: 10 - 20', '1111-1111'
+-- Probamos una direccion que existe pero en otra ciudad (caso valido)
+exec sucursales.insertarSucursal 'La Matanza', 'Torquinst 829, B1765 Lomas, prov bs as, arg', 'L a V: 8 - 20, S y D: 10 - 20', '1111-1211'
 --Vemos que se haya insertado
 select * from sucursales.Sucursal
 --Borramos la sucursal insertada
-delete from sucursales.Sucursal where id = 4
+delete from sucursales.Sucursal
+where ciudad='La Matanza'
+and direccion='Torquinst 829, B1765 Lomas, prov bs as, arg'
+--Nota: no usamos el sp correspondiente para borrar porque el sp realiza un borrado logico, solo cambia el valor del campo 'activo' a 0. (hay mas
+--casos donde hacemos esto mismo en el transcurso de este script)
 
 --***EMPLEADO***
 --SP para ingresar empleado en una sucursal donde la sucursal se determina por ciudad y direccion de la misma
@@ -31,10 +38,10 @@ que el cargo ingresado exista
 que el turno sea valido
 que la ciudad y direccion ingresadas correspondan con una sucursal
 que el cuil tenga el formato correspondiente (solo si no es nulo)*/
-exec recursosHumanos.insertarEmpleadoSucursalPorCiudadDireccion 257020, 'Pollito', 'Perez', 36383025, 'Av. Vergara 1910 , Hurlingham , Buenos Aires','pollitoPerez@gmail.com','pollitoPerez@gmail.com', 20349,'Barrendero', 'Turno madrugada', 'La matanza','Avenida siempre viva 239' 
+exec recursosHumanos.insertarEmpleadoSucursalPorCiudadDireccion 257020, 'Pollito', 'Perez', 36383025, 'Av. Vergara 1910 , Hurlingham , Buenos Aires','pollitoPerez@gmail.com','pollitoPerez@gmail.com', 20349,'Mago', 'Turno madrugada', 'La matanza','Avenida siempre viva 239' 
 
 --Ahora intentemos con un registro valido
-exec recursosHumanos.insertarEmpleadoSucursalPorCiudadDireccion 300000, 'Pollito', 'Perez', 41714474, 'Av. Vergara 1910 , Hurlingham , Buenos Aires','pollitoPerez@gmail.com','pollitoPEREZ@superA.com','21-41714474-1','Cajero', 'TM', 'San Justo','Av. Brig. Gral. Juan Manuel de Rosas 3634, B1754 San Justo, Provincia de Buenos Aires'
+exec recursosHumanos.insertarEmpleadoSucursalPorCiudadDireccion 300000, 'Arnaldo', 'Krauss', 41714474, 'Av. Vergara 1910 , Hurlingham , Buenos Aires','arnaldoKrauss@gmail.com','arnaldoKRAUSS@superA.com','21-41714470-1','Rey de la limpieza', 'TM', 'Lomas de Zamora','Torquinst 829, B1765 Lomas, prov bs as, arg'
 --Comprobamos que efectivamente se pudo ingresar
 select * from recursosHumanos.empleado
 where legajo=300000 
@@ -51,10 +58,10 @@ where legajo=300000
 exec recursosHumanos.insertarEmpleadoSucursalPorId NULL,'Pollito', 'Perez', 41714473, 'Luisito 298','camilotierra@gmail.com', 'camilotierra@gmail.com2', 20, NULL, NULL, NULL
 
 --intentamos fallar las verificaciones generales
-exec recursosHumanos.insertarEmpleadoSucursalPorId 257020, 'Pollito', 'Perez', 36383025, 'Av. Vergara 1910 , Hurlingham , Buenos Aires','pollitoPerez@gmail.com','pollitoPerez@gmail.com', 20349,'Barrendero', 'Turno madrugada', 900
+exec recursosHumanos.insertarEmpleadoSucursalPorId 257020, 'Pollito', 'Perez', 36383025, 'Av. Vergara 1910 , Hurlingham , Buenos Aires','pollitoPerez@gmail.com','pollitoPerez@gmail.com', 20349,'Mago', 'Turno madrugada', 900
 
 --Ingresamos un registro valido
-exec recursosHumanos.insertarEmpleadoSucursalPorId 300000, 'Pollito', 'Perez', 41714474, 'Av. Vergara 1910 , Hurlingham , Buenos Aires','pollitoPerez@gmail.com','pollitoPEREZ@superA.com','21-41714474-1','Cajero', 'TM', 1
+exec recursosHumanos.insertarEmpleadoSucursalPorId 300000, 'Arnaldo', 'Krauss', 41714474, 'Av. Vergara 1910 , Hurlingham , Buenos Aires','arnaldoKrauss@gmail.com','arnaldoKRAUSS@superA.com','21-41714470-1','Rey de la limpieza', 'TM', 1
 --Comprobamos que efectivamente se pudo ingresar
 select * from recursosHumanos.empleado
 where legajo=300000 
@@ -64,11 +71,12 @@ delete from recursosHumanos.Empleado
 where legajo=300000
 
 ---***CARGO***
+select * from recursosHumanos.cargo
 --SP Para ingresar un cargo nuevo
---Valida que el cargo no exista, intentemos ingresar uno que ya existe, por ejemplo, cajero
-exec recursosHumanos.insertarCargo 'cajero'
---Ahora intentemos ingresar un cargo nuevo, ejemplo, conserje
-exec recursosHumanos.insertarCargo 'conSERje'
+--Valida que el cargo no exista, intentemos ingresar uno que ya existe, por ejemplo, barrendero
+exec recursosHumanos.insertarCargo 'barrendero'
+--Ahora intentemos ingresar un cargo nuevo, ejemplo, limpiapisos
+exec recursosHumanos.insertarCargo 'Limpiapisos'
 
 --vemos que se cargo
 select * from recursosHumanos.cargo
@@ -76,33 +84,33 @@ order by id
 
 --borramos el registro
 delete from recursosHumanos.Cargo
-where cargo='Conserje'
+where cargo='limpiapisos'
 
 ---***CATEGORIA***
 --SP para insertar una nueva linea de Producto junto con su categoria (tal como venian en el archivo, de a pares)
 --Si la linea de producto no existe la crea, si ya existe asocia la categoria a ese LP existente, si la categoria ya existe tira error
 --y avisa que la categoria ya esta registrada y asociada a un LP existente (y te muestra a cual)
-
+select * from catalogo.Categoria
 --Intentemos ingresar una combinacion de linea de producto / categoria que ya existe
-exec catalogo.insertarLineaProductoYCategoria 'Almacen', 'Condimentos'
+exec catalogo.insertarLineaProductoYCategoria 'Bazar', 'Platos_chinos'
 
 --Intentamos ingresar una categoria que ya existe con una linea de productos que no existe
-exec catalogo.insertarLineaProductoYCategoria 'Ocultos', 'Condimentos'
+exec catalogo.insertarLineaProductoYCategoria 'Ocultos', 'Platos_chinos'
 
 --Intentamos ingresar combinaciones vacias
 exec catalogo.insertarLineaProductoYCategoria ' ', NULL
 
 --Ingresamos una categoria nueva con una linea de productos existente
-exec catalogo.insertarLineaProductoYCategoria 'Almacen', 'Bolsas reciclables'
+exec catalogo.insertarLineaProductoYCategoria 'Bazar', 'Rascadores' --Nota: si la categoria es del tipo 'rascadores de espalda', el sp lo formatea a 'rascadores_de_espalda'
 --Vemos que este se asocia correctamente con la linea de productos
 select * from catalogo.Categoria c
 inner join catalogo.LineaProducto lp
 on c.idLineaProd=lp.id
-where c.categoria='Bolsas_reciclables'
+where c.categoria='rascadores'
 
 --borramos el registro
 delete from catalogo.Categoria
-where categoria='Bolsas_reciclables'
+where categoria='rascadores'
 
 --Ingresamos una categoria nueva con una linea de productos nueva
 exec catalogo.insertarLineaProductoYCategoria 'Ocultos', 'Magicos'
@@ -128,9 +136,9 @@ exec catalogo.insertarLineaProducto ' '
 exec catalogo.insertarLineaProducto NULL
 
 --Intentamos ingresar una linea de producto existente
-exec catalogo.insertarLineaProducto 'Almacen'
+exec catalogo.insertarLineaProducto 'Bazar'
 
---Ingresamos una linea de producto totalmente nueva
+--Ingresamos una linea de producto totalmente nueva (caso valido)
 exec catalogo.insertarLineaProducto 'Ocultos'
 
 --vemos que se ingreso
@@ -147,7 +155,7 @@ where lineaProd='Ocultos'
 exec catalogo.insertarProducto 1,'Kiwi',NULL,NULL,1.29,kg,NULL,NULL,'fruta'
 
 --intentamos ingresar un producto que ya existe
-exec catalogo.insertarProducto 1,'Banana',0.26,NULL,1.29,kg,NULL,NULL,'fruta'
+exec catalogo.insertarProducto 2,'Plato funshwei',NULL,30,NULL,NULL,'Moonton',NULL,'Platos_chinos'
 
 --intentemos ingresar un producto con precios negativos
 exec catalogo.insertarProducto 920392,'Bujias hescher',-0.26,NULL,-1.29,bujias,NULL,NULL,'fruta'
@@ -156,13 +164,13 @@ exec catalogo.insertarProducto 920392,'Bujias hescher',-0.26,NULL,-1.29,bujias,N
 exec catalogo.insertarProducto 920392,'Bujias hescher',0.26,NULL,1.29,bujias,NULL,NULL,''
 
 --Ahora ingresar uno donde la categoria no exista
-exec catalogo.insertarProducto 920392,'Bujias hescher',0.26,NULL,1.29,bujias,NULL,NULL,'Bujias'
+exec catalogo.insertarProducto 920392,'Polvo de hada',0.26,NULL,1.29,bujias,NULL,NULL,'Ocultos'
 
---Ahora ingresemos un registro valido
-exec catalogo.insertarProducto NULL,'fruta del dragon',3000,NULL,NULL,NULL,NULL,NULL,'fruta'
-exec catalogo.insertarProducto NULL,'fruta del dragon',NULL,3,NULL,NULL,NULL,NULL,'fruta'
+--Ahora ingresamos dos registros validos (uno con precio en pesos y el otro en usd)
+exec catalogo.insertarProducto NULL,'Plato Xiping',3000,NULL,NULL,NULL,NULL,NULL,'Platos_chinos'
+exec catalogo.insertarProducto NULL,'Bujia Malcom',NULL,3,NULL,NULL,NULL,NULL,'Bujias'
 --verificamos que se cargo correctamente en ambas tablas
-select p.id, p.nombre, p.precio, p.fecha, p.activo, c.categoria, lp.lineaProd 
+select p.id, p.nombre, p.precio,p.precioUSD,p.fecha, p.activo, c.categoria, lp.lineaProd 
 from catalogo.Producto p
 inner join catalogo.perteneceA pa
 on p.id=pa.idProd
@@ -170,13 +178,14 @@ inner join catalogo.Categoria c
 on c.id=pa.idCategoria
 inner join catalogo.LineaProducto lp
 on lp.id=c.idLineaProd
-where p.nombre='fruta del dragon'
+where p.nombre='Plato Xiping'
+or p.nombre='Bujia Malcom'
 --borramos los registros
 delete from catalogo.PerteneceA
-where idProd in (select id from catalogo.Producto where nombre='fruta del dragon')
+where idProd in (select id from catalogo.Producto where nombre='Plato xiping' or nombre='Bujia malcom')
 
 delete from catalogo.producto
-where nombre='fruta del dragon'
+where nombre='Plato xiping' or nombre='Bujia malcom'
 
 ---***TIPO DE CLIENTE***
 --SP para insertar un tipo de cliente nuevo
@@ -195,7 +204,7 @@ where tipo='Pro'
 ---***MEDIO DE PAGO***
 --SP Para insertar un nuevo medio de pago
 --intentamos ingresar un medio de pago existente
-exec comprobantes.insertarMedioDePago 'Credit card', 'Tarjeta de credito'
+exec comprobantes.insertarMedioDePago 'bitcoin', 'bitcoin'
 --intentamos ingresar un medio de pago nulo
 exec comprobantes.insertarMedioDePago null, null
 --ahora uno vacio
@@ -222,85 +231,70 @@ exec ventas.insertarFactura @idFactura = null,@tipoFactura = null,@empleadoLeg =
 declare @tablaProds tablaProductosIdCant
 insert into @tablaProds
 values(1,2),(2,2)
-exec ventas.insertarFactura @idFactura = '750-67-8428',@tipoFactura = 'K',@empleadoLeg = 28, @idCliente = 456, @prodsId = @tablaProds
+exec ventas.insertarFactura @idFactura = '111-11-1111',@tipoFactura = 'K',@empleadoLeg = 28, @idCliente = 456, @prodsId = @tablaProds
 --intentamos insertar productos que no existen
 declare @tablaProds tablaProductosIdCant
 insert into @tablaProds
 values(-1,2),(2,2)
-exec ventas.insertarFactura @idFactura = '980-23-2932',@tipoFactura = 'A',@empleadoLeg = 257020, @idCliente = 1, @prodsId = @tablaProds
+exec ventas.insertarFactura @idFactura = '980-23-2932',@tipoFactura = 'A',@empleadoLeg = 1, @idCliente = 1, @prodsId = @tablaProds
 
 --Probamos insertar una factura valida
 declare @tablaProds tablaProductosIdCant
 insert into @tablaProds
 values(1,2),(2,2)
-exec ventas.insertarFactura @idFactura = '980-23-2932',@tipoFactura = 'A',@empleadoLeg = 257020, @idCliente = 1, @prodsId = @tablaProds
+exec ventas.insertarFactura @idFactura = '888-88-8888',@tipoFactura = 'A',@empleadoLeg = 1, @idCliente = 1, @prodsId = @tablaProds
 --vemos que efectivamente se inserto
 select * from ventas.factura
-where idFactura='980-23-2932'
+where idFactura='888-88-8888'
 --vemos las lineas de factura
 select lf.id,lf.idFactura,lf.idProd,p.nombre,p.precio,p.precioUSD,lf.cantidad,lf.subtotal from ventas.LineaDeFactura lf
 inner join ventas.factura f
 on lf.idFactura=f.id
 inner join catalogo.producto p
 on p.id=lf.idProd
-where f.idFactura='980-23-2932'
-
---Probemos un caso valido pero donde se compra un producto tecnologico a ver si la api funciona y todo eso.
-declare @tablaProds tablaProductosIdCant
-insert into @tablaProds
-values(6436,1)
-exec ventas.insertarFactura @idFactura = '239-12-1291',@tipoFactura = 'A',@empleadoLeg = 257020, @idCliente = 1, @prodsId = @tablaProds
-
---vemos las lineas de factura
-select lf.id,lf.idFactura,lf.idProd,p.nombre,lf.precioUn,p.precioUSD,lf.cantidad,lf.subtotal from ventas.LineaDeFactura lf
-inner join ventas.factura f
-on lf.idFactura=f.id
-inner join catalogo.producto p
-on p.id=lf.idProd
-where f.idFactura='239-12-1291'
---son estos productos tec:
-select * from catalogo.producto
-where id=6436
+where f.idFactura='888-88-8888'
+--nota: el precio del plato funshwei se calculo usando una api de conversion de moneda. (se convierte en el momento de usd a pesos)
 
 --borramos las facturas
 delete ventas.LineaDeFactura 
 	where idFactura in (select id from ventas.Factura 
-						where idFactura in ('239-12-1291', '980-23-2932' ))
-delete ventas.Factura where idFactura in ('239-12-1291', '980-23-2932')
+						where idFactura='888-88-8888')
+delete ventas.Factura where idFactura='888-88-8888'
 
 ---***COMPROBANTE***
 --intentamos crear un comprobante con un id vacio, medio de pago invalido y factura vacia
 exec comprobantes.insertarComprobante '', 5, ''
 exec comprobantes.insertarComprobante null, null, null
 --intentamos crear un comprobante para una factura pagada
-exec comprobantes.insertarComprobante '123', 1, '101-17-6199'
+exec comprobantes.insertarComprobante '123', 1, '111-11-1111'
 --intentamos crear un comprobante con un id de pago existente
-exec comprobantes.insertarComprobante '4216-6054-2680-7126', 1, '239-12-1291'
+exec comprobantes.insertarComprobante '2323-2323-2323-2323', 1, '111-11-1111'
 --insertamos un comprobante valido
 declare @tablaProds tablaProductosIdCant
 insert into @tablaProds
-values(6436,1)
-exec ventas.insertarFactura @idFactura = '100-00-0000',@tipoFactura = 'A',@empleadoLeg = 257020, @idCliente = 1, @prodsId = @tablaProds
-exec comprobantes.insertarComprobante '123', 1, '100-00-0000'
+values(1,3)
+exec ventas.insertarFactura @idFactura = '777-77-7777',@tipoFactura = 'A',@empleadoLeg = 1, @idCliente = 1, @prodsId = @tablaProds
+exec comprobantes.insertarComprobante '123', 1, '777-77-7777'
 --insertamos un comprobante valido, cuando el pago es en efectivo el idPago pasa a ser --
 declare @tablaProds tablaProductosIdCant
 insert into @tablaProds
-values(6436,1)
-exec ventas.insertarFactura @idFactura = '110-00-0000',@tipoFactura = 'A',@empleadoLeg = 257020, @idCliente = 1, @prodsId = @tablaProds
-exec comprobantes.insertarComprobante '456', 2, '110-00-0000'
+values(1,1)
+exec ventas.insertarFactura @idFactura = '555-55-5555',@tipoFactura = 'A',@empleadoLeg = 1, @idCliente = 1, @prodsId = @tablaProds
+exec comprobantes.insertarComprobante '456', 3, '555-55-5555'
 --vemos el comprobante y el estado de la factura
 select *
 from comprobantes.Comprobante c
 join ventas.Factura f on f.id = c.idFactura
-where idPago = '123' or f.idFactura = '110-00-0000'
+where (idPago = '123' and f.idFactura = '777-77-7777') or
+(idPago='--' and f.idFactura='555-55-5555')
 --borramos el comprobante y las facturas
 delete comprobantes.Comprobante 
-where idPago = '123' or 
-		idFactura in (select id from ventas.Factura where idFactura = '110-00-0000')
+where idFactura=(select id from ventas.factura where idFactura='777-77-7777')
+or idFactura=(select id from ventas.Factura where idFactura='555-55-5555')
 delete ventas.LineaDeFactura 
 	where idFactura in (select id from ventas.Factura 
-						where idFactura in ('100-00-0000', '110-00-0000' ))
-delete ventas.Factura where idFactura in ('100-00-0000', '110-00-0000')
+						where idFactura in ('777-77-7777', '555-55-5555' ))
+delete ventas.Factura where idFactura in ('777-77-7777', '555-55-5555')
 
 ---***PerteneceA***
 --intentamos insertar datos nulos
@@ -308,10 +302,12 @@ exec catalogo.agregarProductoACategoria null, null
 --intentamos agregar un producto a una categoria inexistente
 exec catalogo.agregarProductoACategoria 1, 1000
 --agregamos un producto a una categoria
-exec catalogo.agregarProductoACategoria 1, 2
+exec catalogo.agregarProductoACategoria 1, 2 --(agregamos el plato funshwei a la categoria bujias para esta prueba)
 select * from catalogo.PerteneceA p 
 	join catalogo.Categoria c on c.id = p.idCategoria
-where idProd = 1
+	inner join catalogo.producto pr
+	on pr.id=p.idProd
+where p.idProd = 1
 --borramos el registro
 delete from catalogo.PerteneceA where idProd = 1 and idCategoria = 2
 
@@ -319,37 +315,41 @@ delete from catalogo.PerteneceA where idProd = 1 and idCategoria = 2
 --Probamos insertar una linea con una factura, producto y cantidad invalidas
 exec ventas.insertarLineaDeFactura @idFactura = -1, @idProd = -1, @cantidad = 0
 --Insertarmos un producto que ya se encuentra en una linea de una factura
---Volver a ejecutar el select para verificar que la cantidad y el subtotal se haya actualizado
+--Volver a ejecutar el select para verificar que la cantidad y el subtotal se haya actualizado (este producto tiene precio en dolares)
 declare @tablaProds tablaProductosIdCant
 insert into @tablaProds
 values(1,1)
-exec ventas.insertarFactura @idFactura = '110-00-0000',@tipoFactura = 'A',@empleadoLeg = 257020, @idCliente = 1, @prodsId = @tablaProds
-
-declare @idFactura int = (select id from ventas.Factura where idFactura = '110-00-0000')
-select * from ventas.LineaDeFactura where idFactura = @idFactura
-exec ventas.insertarLineaDeFactura @idFactura = @idFactura, @idProd = 1, @cantidad = 2
---Insertamos un producto con precio en pesos
-declare @idFactura int = (select id from ventas.Factura where idFactura = '110-00-0000')
-select * from ventas.LineaDeFactura where idFactura = @idFactura
+exec ventas.insertarFactura @idFactura = '999-99-9999',@tipoFactura = 'A',@empleadoLeg = 1, @idCliente = 1, @prodsId = @tablaProds
+--vemos la factura y sus lineas asociadas (ejecutar bloque completo)
+--inicio bloque
+declare @idFactura int = (select id from ventas.Factura where idFactura = '999-99-9999')
+select id,idFactura,idProd,precioUn,cantidad as cantidad_vieja, subtotal as subtotal_vieja from ventas.LineaDeFactura where idFactura = @idFactura
+exec ventas.insertarLineaDeFactura @idFactura = @idFactura, @idProd = 1, @cantidad = 2 --agregamos una linea mas donde se compra 2 unidades mas del mismo producto
+select id,idFactura,idProd,precioUn,cantidad as cantidad_nueva, subtotal as subtotal_nueva 
+from ventas.LineaDeFactura where idFactura = @idFactura --comprobamos como se actualizo la linea
+go
+--fin bloque
+--Insertamos un producto con precio en pesos (ejecutar bloque completo)
+--inicio bloque
+declare @idFactura int = (select id from ventas.Factura where idFactura = '999-99-9999')
+select * from ventas.LineaDeFactura where idFactura = @idFactura --vemos la factura antes de la insercion
 exec ventas.insertarLineaDeFactura @idFactura = @idFactura, @idProd = 2, @cantidad = 2
---Insertamos un producto con precio en dolares
-declare @idFactura int = (select id from ventas.Factura where idFactura = '110-00-0000')
-select * from ventas.LineaDeFactura where idFactura = @idFactura
-exec ventas.insertarLineaDeFactura @idFactura = @idFactura, @idProd = 6436, @cantidad = 2
+select * from ventas.LineaDeFactura where idFactura = @idFactura --luego de la insercion de productos nuevos
+--fin bloque
 
 
 --CLIENTE
 --insertar un cliente nuevo
 --intentamos insertar un cliente con todos los datos nulos
 exec clientes.insertarNuevoCliente null,null,null,null,null
---ahora intentamos ingresar un cliente con un tipo que no existe (los validos son 1 o 2, correspondiente a normal o member)
-exec clientes.insertarNuevoCliente 3,'Pollito','Perez','Varela','Male'
+--ahora intentamos ingresar un cliente con un tipo que no existe
+exec clientes.insertarNuevoCliente 90,'Pollito','Perez','Varela','Male'
 --ahora intentamos con un caso valido (ejecutar transaccion completa)
 begin transaction
-exec clientes.insertarNuevoCliente 2,'Pollito','Perez','Varela','Male'
+exec clientes.insertarNuevoCliente 2,'Braulio','Hernandez','Varela','Male'
 --vemos que se inserto
 select * from clientes.cliente
-where nombre='Pollito'
+where nombre='Braulio'
 rollback
 
 
