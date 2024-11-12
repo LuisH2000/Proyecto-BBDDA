@@ -77,6 +77,8 @@ select * from ventas.LineaDeFactura
 select * from comprobantes.Comprobante
 select * from clientes.Cliente
 /*
+use Com5600G13
+go
 exec importar.importarSucursal 'C:\TP_integrador_Archivos\Informacion_complementaria.xlsx'
 exec importar.importarEmpleados 'C:\TP_integrador_Archivos\Informacion_complementaria.xlsx'
 exec importar.importarMediosDePago 'C:\TP_integrador_Archivos\Informacion_complementaria.xlsx'

@@ -32,6 +32,10 @@ que los mismos contienen información personal.
 use Com5600G13
 go
 
+--vemos los datos antes de encriptar
+select * from recursosHumanos.Empleado
+
+--agregamos las columnas donde guardamos los datos encriptados
 alter table recursosHumanos.Empleado
 	add
 		nombreCifrado varbinary(256),
@@ -43,9 +47,11 @@ alter table recursosHumanos.Empleado
 		cuilCifrado varbinary(256)
 go
 
+--frase que usamos para encriptar
 declare @FraseClave nvarchar(128);  
 set @FraseClave = 'QuieroMiPanDanes'; 
 
+--encriptamos los datos
 update recursosHumanos.Empleado
 SET 
     nombreCifrado = EncryptByPassPhrase(@FraseClave, nombre, 1, convert(varbinary, legajo)),
@@ -55,5 +61,60 @@ SET
     emailPerCifrado = EncryptByPassPhrase(@FraseClave, emailPer, 1, convert(varbinary, legajo)),
     emailEmpCifrado = EncryptByPassPhrase(@FraseClave, emailEmp, 1, convert(varbinary, legajo)),
     cuilCifrado = EncryptByPassPhrase(@FraseClave, convert(varchar(100), cuil), 1, convert(varbinary, legajo))
+go
 
-select * from recursosHumanos.Empleado
+--descartamos las columnas sin encriptar y cambiamos los nombres de las columnas encriptadas
+alter table recursosHumanos.Empleado
+drop column nombre
+
+alter table recursosHumanos.Empleado
+drop column apellido
+
+alter table recursosHumanos.Empleado
+drop constraint UQ_DNI
+alter table recursosHumanos.Empleado
+drop column dni
+
+alter table recursosHumanos.Empleado
+drop column direccion
+
+alter table recursosHumanos.Empleado
+drop constraint UQ_EmailPer
+alter table recursosHumanos.Empleado
+drop column emailPer
+
+alter table recursosHumanos.Empleado
+drop constraint UQ_EmailEmp
+alter table recursosHumanos.Empleado
+drop column emailEmp
+
+alter table recursosHumanos.Empleado
+drop column cuil
+go
+
+EXEC sp_rename 'recursosHumanos.Empleado.nombreCifrado', 'nombre', 'COLUMN';
+EXEC sp_rename 'recursosHumanos.Empleado.apellidoCifrado', 'apellido', 'COLUMN';
+EXEC sp_rename 'recursosHumanos.Empleado.dniCifrado', 'dni', 'COLUMN';
+EXEC sp_rename 'recursosHumanos.Empleado.direccionCifrado', 'direccion', 'COLUMN';
+EXEC sp_rename 'recursosHumanos.Empleado.emailPerCifrado', 'emailPer', 'COLUMN';
+EXEC sp_rename 'recursosHumanos.Empleado.emailEmpCifrado', 'emailEmp', 'COLUMN';
+EXEC sp_rename 'recursosHumanos.Empleado.cuilCifrado', 'cuil', 'COLUMN';
+go
+
+declare @FraseClave nvarchar(128);  
+set @FraseClave = 'QuieroMiPanDanes'; 
+--vemos los datos desencriptados
+select 
+	legajo,
+	CONVERT(VARCHAR(50), DecryptByPassPhrase(@FraseClave, nombre, 1, CONVERT(VARBINARY, legajo))) as nombre,
+	CONVERT(VARCHAR(50), DecryptByPassPhrase(@FraseClave, apellido, 1, CONVERT(VARBINARY, legajo))) as apellido,
+	CONVERT(varchar(50), DecryptByPassPhrase(@FraseClave, dni, 1, CONVERT(VARBINARY, legajo))) as dni,
+	CONVERT(varchar(100), DecryptByPassPhrase(@FraseClave, direccion, 1, CONVERT(VARBINARY, legajo))) as direccion,
+	CONVERT(varchar(60), DecryptByPassPhrase(@FraseClave, emailPer, 1, CONVERT(VARBINARY, legajo))) as emailPer,
+	CONVERT(varchar(60), DecryptByPassPhrase(@FraseClave, emailEmp, 1, CONVERT(VARBINARY, legajo))) as emailEmp,
+	CONVERT(char(13), DecryptByPassPhrase(@FraseClave, cuil, 1, CONVERT(VARBINARY, legajo))) as cuil,
+	cargo,
+	idSucursal,
+	turno,
+	activo
+from recursosHumanos.Empleado
