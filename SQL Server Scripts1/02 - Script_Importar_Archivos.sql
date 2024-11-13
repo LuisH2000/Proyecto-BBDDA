@@ -85,7 +85,7 @@ begin
 		legajo varchar(100),
 		nombre varchar(100),
 		apellido varchar(100),
-		dni int,
+		dni varchar(100),
 		direccion varchar(100),
 		emailPer varchar(100),
 		emailEmp varchar(100),
@@ -99,7 +99,7 @@ begin
 	set @sql = 'insert into #empTemp
 				select *
 				from openrowset(''Microsoft.ACE.OLEDB.12.0'',
-				''Excel 12.0; Database=' + @dir + ';HDR=YES; IMEX=1'', [Empleados$])'
+				''Excel 12.0; Database=' + @dir + ';HDR=NO; IMEX=1'', [Empleados$])'
 	begin try
 		exec sp_executesql @sql
 	end try
@@ -108,6 +108,8 @@ begin
 		print('Hubo un error en la carga, codigo de error OLE DB:'+cast(error_number() as varchar))
 		return
 	end catch
+
+	delete from #empTemp where legajo = 'Legajo/ID'
 	
 	insert into recursosHumanos.Cargo 
 	select distinct cargo from #empTemp t
@@ -121,7 +123,7 @@ begin
 					join sucursales.Sucursal s on s.ciudad = t.sucursal
 	where legajo is not null
 			and not exists(select 1 from recursosHumanos.Empleado e where e.legajo = cast(t.legajo as int))
-
+	
 	drop table #empTemp 
 end
 go
