@@ -47,6 +47,23 @@ begin
 	where legajo = @legEmp
 end
 go
+
+--baja empleado pero por dni
+create or alter proc recursosHumanos.bajaEmpleadoDni
+	@dniEmp int
+as
+begin
+	if not exists(select 1 from recursosHumanos.Empleado where dni=@dniEmp) or @dniEmp is null
+	begin
+		raiserror('El empleado ingresado no existe', 16, 1)
+		return
+	end
+
+	update recursosHumanos.Empleado
+	set activo = 0
+	where dni=@dniEmp
+end
+go
 --CARGO
 create or alter proc recursosHumanos.eliminarCargoId
 	@idCargo int

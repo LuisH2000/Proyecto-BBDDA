@@ -763,7 +763,6 @@ go
 create or alter procedure testing.crearDatosDePrueba
 as
 begin
---CARGA DE DATOS DE PRUEBA, EJECUTAR ESTE BLOQUE PRIMERO
 --carga de sucursales
 begin try
 	INSERT INTO sucursales.sucursal (ciudad, direccion, horario, telefono,activo) 

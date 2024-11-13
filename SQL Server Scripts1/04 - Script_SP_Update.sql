@@ -1614,7 +1614,7 @@ begin
 		else
 		if (select estado from ventas.Factura f join ventas.LineaDeFactura l on l.idFactura = f.id
 			where l.id = @idLn) = 'Pagada'
-			set @error=@error+'La linea de factura que quiere cambiar, esta asociada a una facutra pagada'+char(13)+char(10)
+			set @error=@error+'La linea de factura que quiere cambiar, esta asociada a una factura pagada'+char(13)+char(10)
 	
 	if @cantidad is null or @cantidad <= 0
 		set @error=@error+'La cantidad ingresada no es valida'+char(13)+char(10)
