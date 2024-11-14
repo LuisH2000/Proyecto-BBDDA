@@ -1629,7 +1629,7 @@ go
 --modificar la cantidad
 create or alter proc ventas.modificarCantidadLineaDeFactura
 	@idLn int,
-	@cantidad int
+	@cantidad decimal(5,2)
 as
 begin
 	declare @error varchar(200) = ''

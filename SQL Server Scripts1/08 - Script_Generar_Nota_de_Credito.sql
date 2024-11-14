@@ -36,7 +36,7 @@ go
 create or alter proc comprobantes.generarNotaDeCredito
 	@factura char(11),
 	@idProd int,
-	@cantidadDevolver int
+	@cantidadDevolver decimal(5,3)
 as
 begin
 	declare @error varchar(max) = ''

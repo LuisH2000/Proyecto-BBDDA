@@ -94,6 +94,25 @@ begin
 end
 go
 
+if not exists (select * from sys.schemas where name = 'supermercado')
+begin
+	exec('create schema supermercado')
+end
+go
+
+if not exists (select * from information_schema.tables where
+	table_schema = 'supermercado' and table_name = 'Supermercado')
+begin
+	create table supermercado.Supermercado
+	(
+		razonSocial varchar(20),
+		cuit char(13),
+		ingBrutos char(11),
+		condIVA varchar(30),
+		fInicioAct date
+	)
+end
+
 if not exists (select * from information_schema.tables where
 	table_schema = 'sucursales' and table_name = 'Sucursal')
 begin
@@ -257,7 +276,7 @@ begin
 		idFactura int,
 		idProd int,
 		precioUn decimal(15,2),
-		cantidad int,
+		cantidad decimal(5,2),
 		subtotal decimal(15,2),
 		constraint FK_Factura foreign key (idFactura) references ventas.Factura(id),
 		constraint FK_Prod foreign key (idProd) references catalogo.Producto(id)
@@ -296,3 +315,9 @@ begin
 end
 go
 
+create or alter view ventas.FacturasXSupermercado
+as
+	select *
+	from ventas.Factura f, supermercado.Supermercado
+
+--select * from ventas.FacturasXSupermercado

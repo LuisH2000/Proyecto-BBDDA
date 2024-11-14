@@ -1,5 +1,19 @@
 use [Com5600G13]
 go
+
+--***SUPERMERCADO***
+--probamos con parametros nulos
+exec supermercado.insertarSupermercado @razonSocial = null, @cuit = null, @ingBrutos = null, @condIVA = null, @fInicioAct = null
+--probamos con un cuit y ingreso bruto invalidos
+exec supermercado.insertarSupermercado @razonSocial = null, @cuit = '123', @ingBrutos = '23', @condIVA = null, @fInicioAct = null
+--insertamos los datos del supermercado
+exec supermercado.insertarSupermercado 
+	@razonSocial = 'Aurora S.A.',
+	@cuit = null,
+	@ingBrutos = null,
+	@condIVA = 'Responsable Inscripto',
+	@fInicioAct = null
+
 --CARGA INICIAL DE DATOS (ejecutar el SP, solo hace falta hacerlo una vez, si ya lo ejecuto previamente en otro script ignore este paso)
 exec testing.crearDatosDePrueba
 

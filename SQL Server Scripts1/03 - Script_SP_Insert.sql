@@ -482,7 +482,7 @@ if not exists (select * from sys.types where name = 'tablaProductosIdCant' and i
 begin
 	CREATE TYPE tablaProductosIdCant AS TABLE (
 		idProd int,
-		cantidad int
+		cantidad decimal(5,2)
 	);
 end
 go --Este tipo de dato es necesario para poder pasarle multiples productos al sp
@@ -498,7 +498,7 @@ begin
 	declare @idProductosConf table
 	(
 		idProd int,
-		cant int,
+		cant decimal(5,2),
 		precio decimal(9,2),
 		precioUsd decimal(9,2)
 	)
@@ -674,7 +674,7 @@ go
 create or alter proc ventas.insertarLineaDeFactura
 	@idFactura int,
 	@idProd int,
-	@cantidad int
+	@cantidad decimal(5,2)
 as
 begin
 	declare @error varchar(max) = ''
@@ -761,6 +761,41 @@ begin
 	--nota: quite el if, tratar los clientes como conjuntos no tiene sentido, se identifica c/u por id.
 	insert into clientes.cliente (idTipo,nombre,apellido,ciudad,genero, dni)
 	values(@idTipo,@nombre,@apellido,@ciudad,@genero, @dni)
+end
+go
+
+--SUPERMERCADO
+create or alter proc supermercado.insertarSupermercado
+	@razonSocial varchar(20),
+	@cuit char(13),
+	@ingBrutos char(11),
+	@condIVA varchar(30),
+	@fInicioAct date
+as
+begin
+	declare @error varchar(max) = ''
+	set @razonSocial = ltrim(rtrim(@razonSocial))
+	set @condIVA = ltrim(rtrim(@condIVA))
+
+	if @razonSocial is null or @razonSocial = ''
+		set @error=@error+'No se ingreso la razon social'+char(13)+char(10)
+	if @cuit not like '[0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9]'
+		set @error=@error+'No se ingreso un cuit valido. Respetar xx-xxxxxxxx-x'+char(13)+char(10)
+	if @ingBrutos not like '[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]'
+		set @error=@error+'No se ingreso un numero de ingresos brutos valido'+char(13)+char(10)
+	if @condIVA is null or @condIVA = ''
+		set @error=@error+'No se ingreso la condicion frente al iva'+char(13)+char(10)
+	if exists (select 1 from supermercado.Supermercado)
+		set @error=@error+'Solo puede haber un registro en la tabla Supermercado'+char(13)+char(10)
+
+	if @error <> ''
+	begin
+		raiserror(@error, 16, 1)
+		return
+	end
+
+	insert into supermercado.Supermercado(razonSocial, cuit, ingBrutos, condIVA, fInicioAct)
+		values(@razonSocial, @cuit, @ingBrutos, @condIVA, @fInicioAct)
 end
 go
 
