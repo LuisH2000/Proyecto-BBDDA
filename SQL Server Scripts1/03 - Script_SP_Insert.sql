@@ -720,6 +720,7 @@ go
 --insertar cliente
 create or alter procedure clientes.insertarNuevoCliente
 @idTipo int, 
+@dni int,
 @nombre varchar(50),
 @apellido varchar(50),
 @ciudad varchar (20),
@@ -743,6 +744,11 @@ begin
 		set @error=@error+'No se ingreso un apellido para el cliente.'+char(13)+char(10)
 	if @ciudad is null or @ciudad=''
 		set @error=@error+'No se ingreso una ciudad para el cliente.'+char(13)+char(10)
+	if @dni is null or @dni < 0
+		set @error=@error+'No se ingreso un dni valido para el cliente'+char(13)+char(10)
+	else
+		if exists (select 1 from clientes.Cliente where dni = @dni)
+			set @error=@error+'Ya existe un cliente con el dni ingresado'+char(13)+char(10)
 	if @genero is null or @genero=''
 		set @error=@error+'No se ingreso un genero para el cliente.'+char(13)+char(10)
 	else if @genero not in ('Male','Female')
@@ -754,8 +760,8 @@ begin
 		return
 	end
 	--nota: quite el if, tratar los clientes como conjuntos no tiene sentido, se identifica c/u por id.
-	insert into clientes.cliente (idTipo,nombre,apellido,ciudad,genero)
-	values(@idTipo,@nombre,@apellido,@ciudad,@genero)
+	insert into clientes.cliente (idTipo,nombre,apellido,ciudad,genero, dni)
+	values(@idTipo,@nombre,@apellido,@ciudad,@genero, @dni)
 end
 go
 
@@ -796,10 +802,10 @@ begin try
 	insert into clientes.TipoCliente (tipo)
 	values('Bronze'),('Silver'),('Gold')
 	--carga clientes
-	insert into clientes.Cliente (idTipo, nombre, apellido, ciudad, genero, activo)
-	values(1,'Pollito','Perez','Hurlingham','Male',1),
-	(2,'Juanita','Perez','Varela','Female',1),
-	(3,'Ramon','Valdez','Claypole','Male',1)
+	insert into clientes.Cliente (idTipo, nombre, apellido, ciudad, genero, activo, dni)
+	values(1,'Pollito','Perez','Hurlingham','Male',1, 11111111),
+	(2,'Juanita','Perez','Varela','Female',1, 22222222),
+	(3,'Ramon','Valdez','Claypole','Male',1, 33333333)
 	--carga cargo
 	insert into recursosHumanos.cargo (cargo)
 	values('Barrendero'),('Conserje'),('Rey de la limpieza')

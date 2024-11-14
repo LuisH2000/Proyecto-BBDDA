@@ -1286,6 +1286,33 @@ begin
 end
 go
 
+--cambiar dni cliente
+create or alter proc clientes.cambiarDNICliente
+	@idCli int,
+	@nvoDNI int
+as
+begin
+	declare @error varchar(max)=''
+	if @idCli is null or not exists (select 1 from clientes.cliente where id=@idCli)
+		set @error=@error+'No se ingreso un id de cliente o no existe.'+char(13)+char(10)
+	if @nvoDNI is null or @nvoDNI < 0
+		set @error=@error+'No se ingreso un dni valido'+char(13)+char(10)
+	else 
+		if exists (select 1 from clientes.Cliente where dni = @nvoDNI)
+			set @error=@error+'Ya existe un cliente con el dni ingresado'+char(13)+char(10)
+
+	if @error<>''
+	begin
+		raiserror(@error,16,1)
+		return
+	end
+
+	update clientes.cliente
+	set dni=@nvoDNI
+	where id=@idCli
+end
+go
+
 --FACTURA
 --modificar el id de la factura
 create or alter proc ventas.modificarIdFactura

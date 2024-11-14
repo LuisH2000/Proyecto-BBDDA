@@ -219,6 +219,7 @@ begin
 	(
 		id int identity(1,1) primary key,
 		idTipo int,
+		dni int,
 		nombre varchar(50),
 		apellido varchar(50),
 		ciudad varchar(20),

@@ -824,6 +824,18 @@ begin transaction
 	select * from clientes.Cliente where id = 1 --vemos que se puso de alta
 rollback
 
+--CAMBIAR DNI DEL CLIENTE
+--intentamos con parametros nulos
+exec clientes.cambiarDNICliente @idCli = null, @nvoDNI = null
+--intentamos con un dni existente
+exec clientes.cambiarDNICliente @idCli = 1, @nvoDNI = 22222222
+--cambiamos el dni de un cliente
+begin transaction
+select * from clientes.Cliente where id = 1
+exec clientes.cambiarDNICliente @idCli = 1, @nvoDNI = 123
+select * from clientes.Cliente where id = 1
+rollback
+
 
 --***FACTURA***
 --MODIFICAR EL IDFACTURA

@@ -341,12 +341,14 @@ select * from ventas.LineaDeFactura where idFactura = @idFactura --luego de la i
 --CLIENTE
 --insertar un cliente nuevo
 --intentamos insertar un cliente con todos los datos nulos
-exec clientes.insertarNuevoCliente null,null,null,null,null
+exec clientes.insertarNuevoCliente null,null,null,null,null,null
 --ahora intentamos ingresar un cliente con un tipo que no existe
-exec clientes.insertarNuevoCliente 90,'Pollito','Perez','Varela','Male'
+exec clientes.insertarNuevoCliente 90,123,'Pollito','Perez','Varela','Male'
+--intentamos con un dni que ya tiene otro cliente
+exec clientes.insertarNuevoCliente 1,11111111,'Pollito','Perez','Varela','Male'
 --ahora intentamos con un caso valido (ejecutar transaccion completa)
 begin transaction
-exec clientes.insertarNuevoCliente 2,'Braulio','Hernandez','Varela','Male'
+exec clientes.insertarNuevoCliente 2,123, 'Braulio','Hernandez','Varela','Male'
 --vemos que se inserto
 select * from clientes.cliente
 where nombre='Braulio'
