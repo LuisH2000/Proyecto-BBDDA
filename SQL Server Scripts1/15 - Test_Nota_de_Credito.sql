@@ -1,12 +1,10 @@
 use Com5600G13
 go
 
-select * from ventas.Factura f join ventas.LineaDeFactura l on f.id = l.idFactura where f.id = 1
-
 declare @tablaProds tablaProductosIdCant
 insert into @tablaProds
 values(1,2),(2,2)
-exec ventas.insertarFactura @idFactura = '980-23-2932',@tipoFactura = 'A',@empleadoLeg = 257020, @ciudadCliente = 'San Justo', @genero = 'Female', @tipoCliente = 'Normal', @prodsId = @tablaProds
+exec ventas.insertarFactura @idFactura = '980-23-2932',@tipoFactura = 'A',@empleadoLeg = 257020, @idCliente = 1, @prodsId = @tablaProds
 
 --Probamos una factura inexistente
 exec comprobantes.generarNotaDeCredito @factura='31-2-3', @idProd=41, @cantidadDevolver=3

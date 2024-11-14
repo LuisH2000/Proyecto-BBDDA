@@ -97,8 +97,7 @@ begin
 	--Validaciones criticas (campos que no pueden ser nulos: legajo, dni, emailPer, emailEmp, cargo, ciudadSuc, direccionSuc, turno)
 	if @legajo is null or @dni is null or @emailPer is null or @emailEmp is null or @cargo is null or @ciudadSuc is null or @direccionSuc is null or @turno is null
 	begin
-		raiserror('Como minimo, un registro de empleado debe tener un legajo, dni, email personal, email empresarial, cargo, ciudad y direccion de sucursal y un turno. Ingrese estos 
-		datos e intente nuevamente',16,1)
+		raiserror('Como minimo, un registro de empleado debe tener un legajo, dni, email personal, email empresarial, cargo, ciudad y direccion de sucursal y un turno. Ingrese estos datos e intente nuevamente',16,1)
 		return
 	end
 	--Validaciones generales

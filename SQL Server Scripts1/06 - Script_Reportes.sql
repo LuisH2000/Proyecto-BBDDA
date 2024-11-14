@@ -409,6 +409,8 @@ begin
 			fa.fecha as [Fecha],
 			CONVERT(VARCHAR(5), fa.hora, 108) as [Hora],
 			m.nombreIng as [Medio de pago],
+			e.legajo as [Empleado],
+			s.ciudad as [Sucursal],
 			row_number() over(partition by fa.id, pr.id order by fa.id) as dup
 		from ventas.Factura fa
 			join recursosHumanos.Empleado e on e.legajo = fa.empleadoLeg
@@ -433,7 +435,11 @@ begin
 			[Precio unitario],
 			[Cantidad],
 			[Total],
-			[Fecha]
+			[Fecha],
+			[Hora],
+			[Medio de pago],
+			[Empleado],
+			[Sucursal]
 	from lineaProdDup
 	where dup = 1
 	order by fecha, hora,[Factura ID]

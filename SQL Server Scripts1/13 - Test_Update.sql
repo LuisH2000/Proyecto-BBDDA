@@ -791,6 +791,8 @@ rollback
 --CAMBIAR GENERO DE CLIENTE
 --probamos con datos nulos
 exec clientes.cambiarGeneroCliente null,null 
+--probamos con un genero que no existe
+exec clientes.cambiarGeneroCliente 282382,'Other'
 --ahora con un cliente que no existe
 exec clientes.cambiarGeneroCliente 282382,'Male'
 --ahora con un nombre de solo espacios

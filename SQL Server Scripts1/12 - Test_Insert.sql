@@ -139,26 +139,26 @@ exec catalogo.insertarLineaProducto NULL
 exec catalogo.insertarLineaProducto 'Bazar'
 
 --Ingresamos una linea de producto totalmente nueva (caso valido)
-exec catalogo.insertarLineaProducto 'Ocultos'
+exec catalogo.insertarLineaProducto 'Fantasia'
 
 --vemos que se ingreso
 select * from catalogo.LineaProducto
-where lineaProd='Ocultos'
+where lineaProd='Fantasia'
 
 --borramos el registro
 delete from catalogo.LineaProducto
-where lineaProd='Ocultos'
+where lineaProd='Fantasia'
 
 ---***PRODUCTO***
 --SP Para insertar un producto
 --intentamos ingresar un producto sin precios
-exec catalogo.insertarProducto 1,'Kiwi',NULL,NULL,1.29,kg,NULL,NULL,'fruta'
+exec catalogo.insertarProducto 1,'Kiwi',NULL,NULL,1.29,kg,NULL,NULL,'Platos_chinos'
 
 --intentamos ingresar un producto que ya existe
 exec catalogo.insertarProducto 2,'Plato funshwei',NULL,30,NULL,NULL,'Moonton',NULL,'Platos_chinos'
 
 --intentemos ingresar un producto con precios negativos
-exec catalogo.insertarProducto 920392,'Bujias hescher',-0.26,NULL,-1.29,bujias,NULL,NULL,'fruta'
+exec catalogo.insertarProducto 920392,'Bujias hescher',-0.26,NULL,-1.29,bujias,NULL,NULL,'Bujias'
 
 --intentemos ingresar un producto sin aclarar la categoria
 exec catalogo.insertarProducto 920392,'Bujias hescher',0.26,NULL,1.29,bujias,NULL,NULL,''
@@ -193,6 +193,8 @@ where nombre='Plato xiping' or nombre='Bujia malcom'
 exec clientes.insertarTipoCliente null
 --Ahora uno vacio
 exec clientes.insertarTipoCliente '    '
+--Ahora con uno que ya existe
+exec clientes.insertarTipoCliente 'Gold'
 --Ahora uno valido
 exec clientes.insertarTipoCliente 'Pro'
 --vemos que se inserto
@@ -337,6 +339,10 @@ exec ventas.insertarLineaDeFactura @idFactura = @idFactura, @idProd = 2, @cantid
 select * from ventas.LineaDeFactura where idFactura = @idFactura --luego de la insercion de productos nuevos
 --fin bloque
 
+--borramos los datos insertados
+declare @idFactura int = (select id from ventas.Factura where idFactura = '999-99-9999')
+delete from ventas.LineaDeFactura where idFactura = @idFactura
+delete from ventas.Factura where id = @idFactura
 
 --CLIENTE
 --insertar un cliente nuevo

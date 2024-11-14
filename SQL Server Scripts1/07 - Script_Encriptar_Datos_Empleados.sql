@@ -101,6 +101,9 @@ EXEC sp_rename 'recursosHumanos.Empleado.emailEmpCifrado', 'emailEmp', 'COLUMN';
 EXEC sp_rename 'recursosHumanos.Empleado.cuilCifrado', 'cuil', 'COLUMN';
 go
 
+--vemos los datos encriptados
+select * from recursosHumanos.Empleado
+
 declare @FraseClave nvarchar(128);  
 set @FraseClave = 'QuieroMiPanDanes'; 
 --vemos los datos desencriptados
