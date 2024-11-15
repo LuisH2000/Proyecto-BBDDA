@@ -304,3 +304,23 @@ begin
 
 	delete from comprobantes.Comprobante where id = @id
 end
+go
+--TESTING
+--Sp para borrar los datos de prueba... (nota, solo esta pensado para ejecutarse una unica vez al final de realizar los testeos pertinentes y es opcional)
+create or alter procedure testing.borrarDatosDePrueba
+as
+begin
+	DELETE FROM ventas.LineaDeFactura
+	DELETE FROM comprobantes.Comprobante
+	DELETE FROM ventas.Factura
+	DELETE FROM catalogo.PerteneceA
+	DELETE FROM clientes.Cliente
+	DELETE FROM recursosHumanos.Empleado
+	DELETE FROM catalogo.Categoria
+	DELETE FROM catalogo.Producto
+	DELETE FROM catalogo.LineaProducto
+	DELETE FROM clientes.TipoCliente
+	DELETE FROM recursosHumanos.Cargo
+	DELETE FROM sucursales.Sucursal
+	DELETE FROM comprobantes.MedioDePago
+end

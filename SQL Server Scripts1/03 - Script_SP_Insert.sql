@@ -774,12 +774,17 @@ create or alter proc supermercado.insertarSupermercado
 as
 begin
 	declare @error varchar(max) = ''
+	declare @msgCuitGen varchar(100)=''
 	set @razonSocial = ltrim(rtrim(@razonSocial))
 	set @condIVA = ltrim(rtrim(@condIVA))
+	set @cuit=ltrim(rtrim(@cuit))
+	set @ingBrutos=ltrim(rtrim(@ingBrutos))
 
 	if @razonSocial is null or @razonSocial = ''
 		set @error=@error+'No se ingreso la razon social'+char(13)+char(10)
-	if @cuit not like '[0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9]'
+	if @cuit is null or @cuit=''
+		set @msgCuitGen=@msgCuitGen+'No se ingreso un cuit asi que se usara el cuit generico 20-22222222-3.'
+	else if @cuit not like '[0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9]'
 		set @error=@error+'No se ingreso un cuit valido. Respetar xx-xxxxxxxx-x'+char(13)+char(10)
 	if @ingBrutos not like '[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]'
 		set @error=@error+'No se ingreso un numero de ingresos brutos valido'+char(13)+char(10)
@@ -792,6 +797,12 @@ begin
 	begin
 		raiserror(@error, 16, 1)
 		return
+	end
+
+	if @msgCuitGen<>''
+	begin
+		raiserror(@msgCuitGen,10,1)
+		set @cuit='20-22222222-3'
 	end
 
 	insert into supermercado.Supermercado(razonSocial, cuit, ingBrutos, condIVA, fInicioAct)

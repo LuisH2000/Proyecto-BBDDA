@@ -1825,3 +1825,108 @@ begin
 	where id = @id
 end
 go
+
+--SUPERMERCADO (DATOS DE AURORA)
+--Modificar razon social
+create or alter procedure supermercado.cambiarRazonSocial
+@razonNva varchar(20)
+as
+begin
+	declare @error varchar(max)=''
+	set @razonNva=ltrim(rtrim(@razonNva))
+	if not exists (select 1 from supermercado.Supermercado)
+		set @error=@error+'La tabla supermercado.Supermercado no tiene registros, cargue uno usando supermercado.insertarSupermercado'+char(13)+char(10)
+	if @razonNva is null or @razonNva=''
+		set @error=@error+'No se ingreso una razon social nueva.'+char(13)+char(10)
+	if @error<>''
+	begin
+		raiserror(@error,16,1)
+		return
+	end
+	update supermercado.Supermercado
+	set razonSocial=@razonNva
+end
+go
+--modificar cuit
+create or alter procedure supermercado.cambiarCuit
+@cuitNvo char(13)
+as
+begin
+	declare @error varchar(max)=''
+	set @cuitNvo=ltrim(rtrim(@cuitNvo))
+	if not exists (select 1 from supermercado.Supermercado)
+		set @error=@error+'La tabla supermercado.Supermercado no tiene registros, cargue uno usando supermercado.insertarSupermercado'+char(13)+char(10)
+	if @cuitNvo<>'' and @cuitNvo not like '[0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9]'
+		set @error=@error+'No se ingreso un cuit valido. Respetar xx-xxxxxxxx-x'+char(13)+char(10)
+	if @error<>''
+	begin
+		raiserror(@error,16,1)
+		return
+	end
+	if @cuitNvo='' or @cuitNvo is null
+	begin
+		set @cuitNvo='20-22222222-3'
+		raiserror('No se ingreso un cuit por lo que se mantendra el cuit generico 20-22222222-3.',10,1)
+	end
+	update supermercado.Supermercado
+	set cuit=@cuitNvo
+end
+go
+
+--modificar ingresos brutos
+create or alter procedure supermercado.cambiarNroIngresosBrutos
+@ingBrutosNvo char(11)
+as
+begin
+	declare @error varchar(max)=''
+	set @ingBrutosNvo=ltrim(rtrim(@ingBrutosNvo))
+	if not exists (select 1 from supermercado.Supermercado)
+		set @error=@error+'La tabla supermercado.Supermercado no tiene registros, cargue uno usando supermercado.insertarSupermercado'+char(13)+char(10)
+	if @ingBrutosNvo not like '[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]'
+		set @error=@error+'No se ingreso un numero de ingresos brutos valido'+char(13)+char(10)
+	if @error<>''
+	begin
+		raiserror(@error,16,1)
+		return
+	end
+	if @ingBrutosNvo=''
+		set @ingBrutosNvo=null
+	update supermercado.Supermercado
+	set ingBrutos=@ingBrutosNvo
+end
+go
+
+--modificar cond iva
+create or alter procedure supermercado.cambiarCondIva
+@condIVANva varchar(30)
+as
+begin
+	declare @error varchar(max)=''
+	set @condIVANva=ltrim(rtrim(@condIVANva))
+	if not exists (select 1 from supermercado.Supermercado)
+		set @error=@error+'La tabla supermercado.Supermercado no tiene registros, cargue uno usando supermercado.insertarSupermercado'+char(13)+char(10)
+	if @condIVANva is null or @condIVANva=''
+		set @error=@error+'No se ingreso una condicion frente al iva.'+char(13)+char(10)
+	if @error<>''
+	begin
+		raiserror(@error,16,1)
+		return
+	end
+	update supermercado.Supermercado
+	set condIVA=@condIVANva
+end
+go
+--cambiar fecha de inicio actividades
+create or alter procedure supermercado.cambiarFechaInicioAct
+@fInicioAct date
+as
+begin
+	declare @error varchar(max)=''
+	if not exists (select 1 from supermercado.Supermercado)
+		set @error=@error+'La tabla supermercado.Supermercado no tiene registros, cargue uno usando supermercado.insertarSupermercado'+char(13)+char(10)
+	update supermercado.Supermercado
+	set fInicioAct=@fInicioAct
+end
+go
+
+

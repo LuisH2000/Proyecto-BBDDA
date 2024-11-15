@@ -1142,3 +1142,68 @@ begin transaction
 	exec ventas.modificarHoraComprobante @id = @id, @hora = '12:03'
 	select * from comprobantes.Comprobante where id = @id
 rollback
+
+--***SUPERMERCADO***
+--MODIFICAR RAZON SOCIAL 
+--intentamos con una razon social null
+exec supermercado.cambiarRazonSocial NULL
+--intentamos con una razon social vacia
+exec supermercado.cambiarRazonSocial '    '
+--ahora un caso valido (ejecutar transaccion completa)
+begin transaction
+select * from supermercado.Supermercado --vemos el nombre actual
+exec supermercado.cambiarRazonSocial 'Aurora RLD' --lo actualizamos
+select * from supermercado.Supermercado --vemos el nombre nuevo
+rollback
+
+--MODIFICAR CUIT
+--intentamos con un cuit null (se mantendra el cuit generico 20-22222222-3)
+exec supermercado.cambiarCuit NULL
+--intentamos con uno vacio (se mantendra el cuit generico 20-22222222-3)
+exec supermercado.cambiarCuit '       '
+--intentamos un formato incorrecto de cuit
+exec supermercado.cambiarCuit '20-32'
+--intentamos con un caso valido con cuit no generico (ejecutar transaccion completa)
+begin transaction
+select * from supermercado.Supermercado --vemos el cuit actual
+exec supermercado.cambiarCuit '30-12345678-1'--lo cambiamos
+select * from supermercado.Supermercado --vemos el cuit nuevo
+rollback
+
+--MODIFICAR INGRESOS BRUTOS
+--intentamos con un numero no valido
+exec supermercado.cambiarNroIngresosBrutos '2903'
+--un caso valido
+begin transaction
+select * from supermercado.Supermercado --vemos el numero actual (nota que null es valido)
+exec supermercado.cambiarNroIngresosBrutos '12345678910' -- lo actualizamos
+select * from supermercado.Supermercado --vemos el numero nuevo
+rollback
+
+--MODIFICAR CONDICION FRENTE AL IVA
+--intentamos con un valor nulo
+exec supermercado.cambiarCondIva null
+--ahora con un valor vacio
+exec supermercado.cambiarCondIva '      '
+--ahora con un caso valido
+begin transaction
+select * from supermercado.Supermercado --vemos la condicion actual
+exec supermercado.cambiarCondIva 'Exento' --lo actualizamos
+select * from supermercado.Supermercado --vemos que se actualizo
+rollback
+
+
+--MODIFICAR FECHA DE INICIO DE ACTIVIDADES
+--ejecutar transaccion completa
+begin transaction
+declare @fecha date = getdate()
+select * from supermercado.Supermercado --vemos la fecha actual
+exec supermercado.cambiarFechaInicioAct @fecha --actualizamos la fecha
+select * from supermercado.Supermercado --vemos los cambios
+rollback
+
+--BORRAR LOS DATOS DE PRUEBA (opcional)
+--Nota: solo ejecutar una unica vez y una vez que ya se probaron los demas sp de delete e insert ya que una vez que se borran no se pueden volver a cargar.
+--Ademas, no se debe ejecutar si ya se cargaron los archivos ya que se borraran todas las tablas.
+exec testing.borrarDatosDePrueba
+
