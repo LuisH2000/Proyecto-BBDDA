@@ -42,6 +42,8 @@ begin
 	declare @error varchar(max) = ''
 	declare @idFactura int
 	declare @precio decimal(15,2)
+	declare @idNC int
+	declare @cantProdDevHist int=0
 	set @factura = ltrim(rtrim(@factura))
 	--verificamos que la factura no este vacia
 	--si no esta vacia, verificamos que exista y que este pagada
@@ -66,14 +68,27 @@ begin
 	else
 		if (select cantidad from ventas.LineaDeFactura where idFactura = @idFactura and idProd = @idProd) < @cantidadDevolver
 			set @error=@error+'La cantidad a devolver excede la cantidad comprada del producto para dicha factura' + char(13) + char(10)
-
+	set @cantProdDevHist=(select sum(pnc.cantProd) from comprobantes.ProductoNotaDeCredito pnc inner join comprobantes.comprobante c on c.id=pnc.idNotaCred where idProd=@idProd)
+	if @cantProdDevHist+@cantidadDevolver>(select cantidad from ventas.LineaDeFactura where idFactura=@idFactura and idProd=@idProd) and @cantidadDevolver<>0
+		set @error=@error+'La cantidad a devolver sumada con la cantidad ya devuelta del producto supera la cantidad comprada del producto para dicha factura'+char(13)+char(10)
 	if @error <> ''
 	begin
 		raiserror(@error, 16, 1)
 		return
 	end
-	set @precio = (select precioUn from ventas.LineaDeFactura where idFactura = @idFactura and idProd = @idProd)
-	insert into comprobantes.Comprobante(tipoComprobante, idFactura, fecha, hora, monto)
-		values('Nota de Credito', @idFactura, getdate(), convert(time, getdate()), @precio*@cantidadDevolver)
+	begin transaction
+		begin try
+			set @precio = (select precioUn from ventas.LineaDeFactura where idFactura = @idFactura and idProd = @idProd)
+			insert into comprobantes.Comprobante(tipoComprobante, idFactura, fecha, hora, monto)
+				values('Nota de Credito', @idFactura, getdate(), convert(time, getdate()), @precio*@cantidadDevolver)
+			set @idNC = scope_identity() --obtenemos el id de la nota de credito recien generada
+			insert into comprobantes.ProductoNotaDeCredito (idNotaCred, idProd, cantProd)
+			values(@idNC,@idProd,@cantidadDevolver)
+	commit transaction
+		end try
+	begin catch
+		rollback transaction
+		raiserror('Hubo un error al realizar la transaccion que generaba la nota de credito. Intente nuevamente.',16,1)
+	end catch
 end
 go

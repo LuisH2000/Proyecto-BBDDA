@@ -315,6 +315,20 @@ begin
 end
 go
 
+if not exists (select * from information_schema.tables where table_schema= 'comprobantes' and table_name = 'ProductoNotaDeCredito')
+begin
+	create table comprobantes.ProductoNotaDeCredito
+	(id int identity(1,1) primary key,
+	idNotaCred int,
+	idProd int,
+	cantProd decimal(5,3),
+	constraint FK_Comprobante_NotaCred foreign key (idNotaCred) references comprobantes.Comprobante (id),
+	constraint FK_Producto_idProd foreign key (idProd) references catalogo.producto (id)
+	)
+end
+go
+
+
 create or alter view ventas.FacturasXSupermercado
 as
 	select *
