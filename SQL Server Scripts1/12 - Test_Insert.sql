@@ -13,6 +13,7 @@ exec supermercado.insertarSupermercado
 	@ingBrutos = null,
 	@condIVA = 'Responsable Inscripto',
 	@fInicioAct = null
+select * from supermercado.Supermercado
 --CARGA INICIAL DE DATOS (ejecutar el SP, solo hace falta hacerlo una vez, si ya lo ejecuto previamente en otro script ignore este paso)
 exec testing.crearDatosDePrueba
 
