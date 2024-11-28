@@ -33,10 +33,19 @@ Tener en cuenta que la nota de crédito debe estar asociada a una Factura con est
 use Com5600G13
 go
 
+--Tipo de dato necesario para este SP (Fue creado durante el script de insercion, pero por las dudas se pone aca denuevo).
+if not exists (select * from sys.types where name = 'tablaProductosIdCant' and is_user_defined = 1)
+begin
+	CREATE TYPE tablaProductosIdCant AS TABLE (
+		idProd int,
+		cantidad decimal(5,2)
+	);
+end
+go
+
 create or alter proc comprobantes.generarNotaDeCredito
 	@factura char(11),
-	@idProd int,
-	@cantidadDevolver decimal(5,3)
+	@tablaProductos tablaProductosIdCant READONLY
 as
 begin
 	declare @error varchar(max) = ''
@@ -44,6 +53,12 @@ begin
 	declare @precio decimal(15,2)
 	declare @idNC int
 	declare @cantProdDevHist int=0
+	declare @tablaProdPrecio table
+	(idProd int,
+	cantidad decimal(5,2),
+	precio decimal(15,2),
+	cantidadHist decimal(5,2)
+	)
 	set @factura = ltrim(rtrim(@factura))
 	--verificamos que la factura no este vacia
 	--si no esta vacia, verificamos que exista y que este pagada
@@ -58,19 +73,28 @@ begin
 			if (select estado from ventas.Factura where id = @idFactura) = 'Impaga'
 				set @error = @error + 'La factura ingresada esta impaga' + char(13)+ char(10)
 	end
-	--verificamos la cantidad no sea nula y que sea mayor a 0
-	if @cantidadDevolver is null or @cantidadDevolver <= 0
-		set @error=@error+'La cantidad a devolver es invalida' + char(13) + char(10)
-	--verificamos que el id del producto a devolver exista en la factura, y si existe, 
-	--verificamos que se intente devolver la cantidad que compro o menos
-	if not exists (select 1 from ventas.LineaDeFactura where idFactura = @idFactura and idProd = @idProd)
-		set @error=@error+'El producto ingresado no se encuentra en la factura ingresada' + char(13) + char(10)
+	--completamos la tabla auxiliar con los datos necesarios, idProd, cantidad, su precio en la linea de factura, y la cantidad historica devuelta
+	insert into @tablaProdPrecio (idProd, cantidad, precio, cantidadHist)
+	select tc.idProd, tc.cantidad, lf.precioUn, coalesce((select sum(ldc.cantProd) from comprobantes.comprobante c inner join comprobantes.LineaDeNotaDeCredito ldc on 
+	ldc.idNotaCred=c.id where ldc.idProd=tc.idProd and c.idFactura=@idFactura and c.tipoComprobante='Nota de Credito'),0) from @tablaProductos tc
+	left join ventas.LineaDeFactura lf
+	on tc.idProd=lf.idProd and lf.idFactura=@idFactura
+
+	--verificamos que ninguna cantidad sea nula
+	if exists (select 1 from @tablaProdPrecio where cantidad<=0)
+		set @error=@error+'Alguno de los productos contiene una cantidad para devolver invalida. (0 o menor).' + char(13) + char(10)
+	--verificamos que los productos existan en la factura ingresada
+	if exists (select 1 from @tablaProdPrecio where precio is null)
+		set @error=@error+'Alguno de los productos ingresados no existen en la factura ingresada.'+char(13)+char(10)
 	else
-		if (select cantidad from ventas.LineaDeFactura where idFactura = @idFactura and idProd = @idProd) < @cantidadDevolver
-			set @error=@error+'La cantidad a devolver excede la cantidad comprada del producto para dicha factura' + char(13) + char(10)
-	set @cantProdDevHist=(select sum(pnc.cantProd) from comprobantes.ProductoNotaDeCredito pnc inner join comprobantes.comprobante c on c.id=pnc.idNotaCred where idProd=@idProd)
-	if @cantProdDevHist+@cantidadDevolver>(select cantidad from ventas.LineaDeFactura where idFactura=@idFactura and idProd=@idProd) and @cantidadDevolver<>0
-		set @error=@error+'La cantidad a devolver sumada con la cantidad ya devuelta del producto supera la cantidad comprada del producto para dicha factura'+char(13)+char(10)
+	begin
+		--verificamos que de existir, ninguna cantidad sea mayor a su equivalente en la factura
+		if exists (select 1 from ventas.LineaDeFactura lf inner join @tablaProdPrecio tp on lf.idProd=tp.idProd where idFactura=@idFactura and tp.cantidad>lf.cantidad)
+			set @error=@error+'Alguno de los productos contiene una cantidad que sobrepasa la cantidad del mismo producto en la factura.' + char(13) + char(10)
+		else if exists (select 1 from ventas.LineaDeFactura lf inner join @tablaProdPrecio tp on lf.idProd=tp.idProd where idFactura=@idFactura and tp.cantidad+tp.cantidadHist>lf.cantidad)
+			set @error=@error+'Alguna cantidad de los productos contiene una cantidad que al ser sumado con otras notas de credito asociada a esta factura'+char(13)+char(10)+'sobrepasan la cantidad del mismo producto en la factura.'+char(13)+char(10)
+		--y que de existir notas de credito anteriores que al sumarse con el actual no se sobrepasen
+	end
 	if @error <> ''
 	begin
 		raiserror(@error, 16, 1)
@@ -78,12 +102,13 @@ begin
 	end
 	begin transaction
 		begin try
-			set @precio = (select precioUn from ventas.LineaDeFactura where idFactura = @idFactura and idProd = @idProd)
+			declare @montoTotal decimal(20,2)
+			set @montoTotal=(select sum(precio*cantidad) from @tablaProdPrecio)
 			insert into comprobantes.Comprobante(tipoComprobante, idFactura, fecha, hora, monto)
-				values('Nota de Credito', @idFactura, getdate(), convert(time, getdate()), @precio*@cantidadDevolver)
+				values('Nota de Credito', @idFactura, getdate(), convert(time, getdate()), @montoTotal)
 			set @idNC = scope_identity() --obtenemos el id de la nota de credito recien generada
-			insert into comprobantes.ProductoNotaDeCredito (idNotaCred, idProd, cantProd)
-			values(@idNC,@idProd,@cantidadDevolver)
+			insert into comprobantes.LineaDeNotaDeCredito (idNotaCred, idProd, cantProd,precioUn,subTotal)
+			select @idNC, idProd, cantidad, precio, cantidad*precio from @tablaProdPrecio
 	commit transaction
 		end try
 	begin catch

@@ -315,13 +315,15 @@ begin
 end
 go
 
-if not exists (select * from information_schema.tables where table_schema= 'comprobantes' and table_name = 'ProductoNotaDeCredito')
+if not exists (select * from information_schema.tables where table_schema= 'comprobantes' and table_name = 'LineaDeNotaDeCredito')
 begin
-	create table comprobantes.ProductoNotaDeCredito
+	create table comprobantes.LineaDeNotaDeCredito
 	(id int identity(1,1) primary key,
 	idNotaCred int,
 	idProd int,
 	cantProd decimal(5,3),
+	precioUn decimal(15,2),
+	subTotal decimal(15,2),
 	constraint FK_Comprobante_NotaCred foreign key (idNotaCred) references comprobantes.Comprobante (id),
 	constraint FK_Producto_idProd foreign key (idProd) references catalogo.producto (id)
 	)
